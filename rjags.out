@@ -1,0 +1,11 @@
+* installing *source* package ‘rjags’ ...
+** this is package ‘rjags’ version ‘4-17’
+** package ‘rjags’ successfully unpacked and MD5 sums checked
+** using staged installation
+checking for pkg-config... no
+configure: Attempting legacy configuration of rjags
+checking for jags... no
+configure: error: "automatic detection of JAGS failed. Please use pkg-config to locate the JAGS library. See the INSTALL file for details."
+ERROR: configuration failed for package ‘rjags’
+* removing ‘/Users/ndukaboika/Library/R/arm64/4.5/library/rjags’
+* restoring previous ‘/Users/ndukaboika/Library/R/arm64/4.5/library/rjags’

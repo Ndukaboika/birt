@@ -1,0 +1,31 @@
+Package: bayesRasch
+Title: Bayesian Rasch Models via CmdStan
+Version: 0.1.0
+Authors@R: person("Nduka", "Boika", email = "Boikanduka@gmail.com", role = c("aut", "cre"))
+Description: Fit Bayesian dichotomous Rasch models using CmdStan via the 
+    cmdstanr interface. Provides functions for model fitting, item and person 
+    parameter estimation, model diagnostics (outfit/infit), and visualizations 
+    including item characteristic curves, Wright maps, and test information 
+    functions.
+License: MIT + file LICENSE
+URL: https://github.com/ndukaboika/bayesRasch
+BugReports: https://github.com/Ndukaboika/bayesRasch/issues
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.3
+Depends: 
+    R (>= 4.1.0)
+Imports: 
+    bayesplot,
+    checkmate,
+    cli,
+    cmdstanr,
+    ggplot2,
+    posterior,
+    rlang
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown
+Additional_repositories: https://stan-dev.r-universe.dev/
+Config/testthat/edition: 3
