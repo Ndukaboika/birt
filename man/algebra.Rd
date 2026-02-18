@@ -5,18 +5,14 @@
 \alias{algebra}
 \title{Student Assessment Dataset}
 \format{
-A matrix with 1302 rows (students) and 12 columns (items).
-
+A matrix with 1382 rows (students) and 12 columns (items).
 \describe{
 \item{Rows}{Students}
-\item{Columns}{Test Items}
+\item{Columns}{Test items. 1 = correct, 0 = incorrect.}
 }
 }
 \source{
 Example assessment dataset included for demonstration.
-}
-\usage{
-algebra
 }
 \description{
 A binary response matrix used to demonstrate the Bayesian Rasch model.
