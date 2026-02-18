@@ -4,7 +4,7 @@
 #' to the observed mean score. If the model fits well, the observed mean
 #' (red dashed line) should fall within the simulated distribution (blue bars).
 #'
-#' @param object A bayesRasch_fit object from rasch_fit().
+#' @param object A birt_fit object from rasch_fit().
 #' @param nsamples Number of posterior predictive draws (default = 100).
 #'
 #' @return Invisibly returns a list with:
@@ -15,10 +15,9 @@
 #'
 #' @export
 ppc_rasch <- function(object, nsamples = 100) {
-
   # --- Check input ---
-  # Updated to match our class name "bayesRasch_fit"
-  checkmate::assert_class(object, "bayesRasch_fit")
+  # Updated to match our class name "birt_fit"
+  checkmate::assert_class(object, "birt_fit")
 
   fit <- object$fit
 
@@ -26,9 +25,9 @@ ppc_rasch <- function(object, nsamples = 100) {
   draws <- fit$draws()
   draws_array <- posterior::as_draws_array(draws)
 
-  J <- object$J   # number of students
-  K <- object$K   # number of questions
-  N <- J * K      # total cells in response matrix
+  J <- object$J # number of students
+  K <- object$K # number of questions
+  N <- J * K # total cells in response matrix
 
   # --- Select a subset of draws ---
   # If we have 4000 draws but only want 100, take evenly spaced ones
@@ -43,7 +42,7 @@ ppc_rasch <- function(object, nsamples = 100) {
 
     # Extract parameter values for this single draw
     theta <- draws_array[d, , grep("^alpha\\[", dimnames(draws_array)[[3]])]
-    beta  <- draws_array[d, , grep("^beta\\[", dimnames(draws_array)[[3]])]
+    beta <- draws_array[d, , grep("^beta\\[", dimnames(draws_array)[[3]])]
     delta <- draws_array[d, 1, "delta"]
 
     # Compute probability matrix: P(correct) = logistic(alpha + delta - beta)

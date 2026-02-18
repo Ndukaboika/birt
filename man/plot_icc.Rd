@@ -7,7 +7,7 @@
 plot_icc(object, items = NULL, theta_range = c(-4, 4), ci = TRUE, ...)
 }
 \arguments{
-\item{object}{A bayesRasch_fit object.}
+\item{object}{A birt_fit object.}
 
 \item{items}{Which items to plot (integer vector). Default: all.}
 

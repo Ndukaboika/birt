@@ -7,7 +7,7 @@
 person_fit(object)
 }
 \arguments{
-\item{object}{A bayesRasch_fit object.}
+\item{object}{A birt_fit object.}
 }
 \value{
 A data frame with columns: person, total_score, outfit, infit.

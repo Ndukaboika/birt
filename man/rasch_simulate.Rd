@@ -43,8 +43,8 @@ learning the package, and running simulation studies.
 }
 \examples{
 sim <- rasch_simulate(J = 100, K = 5, seed = 42)
-head(sim$data)    # first few rows of the response matrix
-sim$beta          # true item difficulties
-sim$delta         # true mean ability
+head(sim$data) # first few rows of the response matrix
+sim$beta # true item difficulties
+sim$delta # true mean ability
 
 }

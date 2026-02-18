@@ -7,7 +7,7 @@
 plot_wright_map(object, ...)
 }
 \arguments{
-\item{object}{A bayesRasch_fit object.}
+\item{object}{A birt_fit object.}
 
 \item{...}{Ignored.}
 }

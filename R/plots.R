@@ -4,7 +4,7 @@
 #' as a function of ability. Each item gets one curve.
 #' Harder items have curves shifted to the right.
 #'
-#' @param object A bayesRasch_fit object.
+#' @param object A birt_fit object.
 #' @param items Which items to plot (integer vector). Default: all.
 #' @param theta_range Range of ability values to show. Default c(-4, 4).
 #' @param ci Show 95% credible bands? Default TRUE.
@@ -14,8 +14,7 @@
 #' @export
 plot_icc <- function(object, items = NULL, theta_range = c(-4, 4),
                      ci = TRUE, ...) {
-
-  checkmate::assert_class(object, "bayesRasch_fit")
+  checkmate::assert_class(object, "birt_fit")
 
   K <- object$K
   if (is.null(items)) items <- seq_len(K)
@@ -24,7 +23,7 @@ plot_icc <- function(object, items = NULL, theta_range = c(-4, 4),
   b_draws <- posterior::as_draws_matrix(object$fit$draws("beta"))
 
   # Posterior mean and 95% interval for each item
-  b_mean  <- apply(b_draws, 2, mean)
+  b_mean <- apply(b_draws, 2, mean)
   b_lower <- apply(b_draws, 2, stats::quantile, probs = 0.025)
   b_upper <- apply(b_draws, 2, stats::quantile, probs = 0.975)
 
@@ -34,17 +33,17 @@ plot_icc <- function(object, items = NULL, theta_range = c(-4, 4),
   # Build plot data: one row per (theta, item) combination
   plot_data <- do.call(rbind, lapply(items, function(i) {
     # ICC: P(correct) = plogis(ability - difficulty)
-    p_mean  <- stats::plogis(theta_seq - b_mean[i])
+    p_mean <- stats::plogis(theta_seq - b_mean[i])
     # Note the "flip": higher beta = lower P, so bounds swap
     p_lower <- stats::plogis(theta_seq - b_upper[i])
     p_upper <- stats::plogis(theta_seq - b_lower[i])
 
     data.frame(
-      theta   = theta_seq,
-      p       = p_mean,
+      theta = theta_seq,
+      p = p_mean,
       p_lower = p_lower,
       p_upper = p_upper,
-      item    = object$item_names[i],
+      item = object$item_names[i],
       stringsAsFactors = FALSE
     )
   }))
@@ -81,14 +80,13 @@ plot_icc <- function(object, items = NULL, theta_range = c(-4, 4),
 #' Shows person abilities (histogram) and item difficulties (triangles)
 #' on the same logit scale. Lets you see if items cover the ability range.
 #'
-#' @param object A bayesRasch_fit object.
+#' @param object A birt_fit object.
 #' @param ... Ignored.
 #'
 #' @return A ggplot2 object.
 #' @export
 plot_wright_map <- function(object, ...) {
-
-  checkmate::assert_class(object, "bayesRasch_fit")
+  checkmate::assert_class(object, "birt_fit")
 
   # Person total abilities (alpha + delta)
   persons <- person_params(object)
@@ -99,7 +97,7 @@ plot_wright_map <- function(object, ...) {
   b_mean <- items$mean
 
   person_df <- data.frame(value = theta_mean)
-  item_df   <- data.frame(
+  item_df <- data.frame(
     value = b_mean,
     label = object$item_names,
     stringsAsFactors = FALSE
@@ -140,7 +138,7 @@ plot_wright_map <- function(object, ...) {
 #' In Rasch, item info = P(1-P), which peaks at ability = difficulty.
 #' Test info = sum of all item infos.
 #'
-#' @param object A bayesRasch_fit object.
+#' @param object A birt_fit object.
 #' @param items Which items to include. Default: all.
 #' @param theta_range Range of ability values. Default c(-4, 4).
 #' @param show_items Show individual item curves? Default FALSE.
@@ -150,14 +148,13 @@ plot_wright_map <- function(object, ...) {
 #' @export
 plot_info <- function(object, items = NULL, theta_range = c(-4, 4),
                       show_items = FALSE, ...) {
-
-  checkmate::assert_class(object, "bayesRasch_fit")
+  checkmate::assert_class(object, "birt_fit")
 
   K <- object$K
   if (is.null(items)) items <- seq_len(K)
 
   b_draws <- posterior::as_draws_matrix(object$fit$draws("beta"))
-  b_mean  <- apply(b_draws, 2, mean)
+  b_mean <- apply(b_draws, 2, mean)
 
   theta_seq <- seq(theta_range[1], theta_range[2], length.out = 200)
 
@@ -180,8 +177,8 @@ plot_info <- function(object, items = NULL, theta_range = c(-4, 4),
     item_info_df <- do.call(rbind, lapply(seq_along(items), function(j) {
       data.frame(
         theta = theta_seq,
-        info  = info_matrix[, j],
-        item  = object$item_names[items[j]],
+        info = info_matrix[, j],
+        item = object$item_names[items[j]],
         stringsAsFactors = FALSE
       )
     }))

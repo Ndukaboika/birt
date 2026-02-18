@@ -22,9 +22,9 @@
 #'
 #' @examples
 #' sim <- rasch_simulate(J = 100, K = 5, seed = 42)
-#' head(sim$data)    # first few rows of the response matrix
-#' sim$beta          # true item difficulties
-#' sim$delta         # true mean ability
+#' head(sim$data) # first few rows of the response matrix
+#' sim$beta # true item difficulties
+#' sim$delta # true mean ability
 #'
 #' @export
 rasch_simulate <- function(J = 200,
@@ -33,7 +33,6 @@ rasch_simulate <- function(J = 200,
                            alpha_sd = 1,
                            beta = NULL,
                            seed = NULL) {
-
   # --- Input validation ---
   # These catch mistakes early with clear messages instead of cryptic errors
 
@@ -44,7 +43,7 @@ rasch_simulate <- function(J = 200,
 
   # assert_number: must be a single number (not a vector, not NA)
   checkmate::assert_number(delta_true)
-  checkmate::assert_number(alpha_sd, lower = 0)  # SD can't be negative
+  checkmate::assert_number(alpha_sd, lower = 0) # SD can't be negative
 
   # --- Set random seed ---
   # If you provide seed = 42, you'll get the exact same data every time
@@ -93,8 +92,8 @@ rasch_simulate <- function(J = 200,
   )
 
   # --- Add readable names ---
-  colnames(data) <- paste0("Q", seq_len(K))    # Q1, Q2, ..., Q10
-  rownames(data) <- paste0("S", seq_len(J))    # S1, S2, ..., S200
+  colnames(data) <- paste0("Q", seq_len(K)) # Q1, Q2, ..., Q10
+  rownames(data) <- paste0("S", seq_len(J)) # S1, S2, ..., S200
 
   # --- Return everything ---
   # We return the true parameters alongside the data so you can

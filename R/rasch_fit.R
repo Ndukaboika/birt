@@ -23,7 +23,7 @@
 #' @param seed Random seed for reproducibility.
 #' @param ... Extra arguments passed to cmdstanr's sample() method.
 #'
-#' @return An object of class "bayesRasch_fit" containing:
+#' @return An object of class "birt_fit" containing:
 #'   \describe{
 #'     \item{fit}{The CmdStanMCMC fit object (for advanced use).}
 #'     \item{data}{The original response matrix.}
@@ -49,16 +49,15 @@ rasch_fit <- function(data,
                       iter_sampling = 1000,
                       seed = NULL,
                       ...) {
-
   # ==============================================================
   # PART 1: Validate the input data
   # ==============================================================
 
   # Check that 'data' is either a matrix or a data frame
   checkmate::assert(
-    checkmate::check_matrix(data),       # is it a matrix?
-    checkmate::check_data_frame(data),   # or a data frame?
-    combine = "or"                       # either one is OK
+    checkmate::check_matrix(data), # is it a matrix?
+    checkmate::check_data_frame(data), # or a data frame?
+    combine = "or" # either one is OK
   )
 
   # Convert to matrix if it's a data frame
@@ -74,8 +73,8 @@ rasch_fit <- function(data,
   }
 
   # Get dimensions
-  J <- nrow(data)   # number of students (rows)
-  K <- ncol(data)   # number of questions (columns)
+  J <- nrow(data) # number of students (rows)
+  K <- ncol(data) # number of questions (columns)
 
   # Need at least 2 students and 2 questions
   if (J < 2) cli::cli_abort("Need at least 2 students (rows).")
@@ -107,12 +106,12 @@ rasch_fit <- function(data,
 
   # Build the data list that matches YOUR Stan model's data{} block
   stan_data <- list(
-    J  = J,                             # number of students
-    K  = K,                             # number of questions
-    N  = nrow(obs),                     # total observations (J*K minus any NAs)
-    jj = as.integer(obs[, 1]),          # student index per observation
-    kk = as.integer(obs[, 2]),          # question index per observation
-    y  = as.integer(data[obs])          # the 0/1 response
+    J  = J, # number of students
+    K  = K, # number of questions
+    N  = nrow(obs), # total observations (J*K minus any NAs)
+    jj = as.integer(obs[, 1]), # student index per observation
+    kk = as.integer(obs[, 2]), # question index per observation
+    y  = as.integer(data[obs]) # the 0/1 response
   )
 
   # ==============================================================
@@ -120,14 +119,14 @@ rasch_fit <- function(data,
   # ==============================================================
 
   # system.file() finds where the .stan file was installed
-  # When someone installs the package, inst/stan/bayesRasch.stan
+  # When someone installs the package, inst/stan/birt.stan
   # becomes accessible at this path
-  stan_file <- system.file("stan", "bayesRasch.stan", package = "bayesRasch")
+  stan_file <- system.file("stan", "birt.stan", package = "birt")
 
   # If it's not found, the package wasn't installed properly
   if (stan_file == "") {
     cli::cli_abort(
-      "Stan model file not found. Is {.pkg bayesRasch} installed correctly?"
+      "Stan model file not found. Is {.pkg birt} installed correctly?"
     )
   }
 
@@ -144,13 +143,13 @@ rasch_fit <- function(data,
   )
 
   fit <- mod$sample(
-    data            = stan_data,         # our prepared data
-    chains          = chains,            # number of chains
-    parallel_chains = parallel_chains,   # how many in parallel
-    iter_warmup     = iter_warmup,       # warmup (discarded)
-    iter_sampling   = iter_sampling,     # kept samples
-    seed            = seed,              # reproducibility
-    ...                                  # any extra options
+    data            = stan_data, # our prepared data
+    chains          = chains, # number of chains
+    parallel_chains = parallel_chains, # how many in parallel
+    iter_warmup     = iter_warmup, # warmup (discarded)
+    iter_sampling   = iter_sampling, # kept samples
+    seed            = seed, # reproducibility
+    ... # any extra options
   )
 
   # ==============================================================
@@ -158,19 +157,19 @@ rasch_fit <- function(data,
   # ==============================================================
 
   # structure() creates a list and assigns it a class name
-  # The class "bayesRasch_fit" lets us define custom methods:
-  #   print.bayesRasch_fit, summary.bayesRasch_fit, plot.bayesRasch_fit
+  # The class "birt_fit" lets us define custom methods:
+  #   print.birt_fit, summary.birt_fit, plot.birt_fit
   out <- structure(
     list(
-      fit        = fit,          # the raw CmdStanMCMC object
-      data       = data,        # original response matrix
-      stan_data  = stan_data,   # what we sent to Stan
-      item_names = item_names,  # question names
-      person_ids = person_ids,  # student IDs
-      J          = J,           # number of students
-      K          = K            # number of questions
+      fit        = fit, # the raw CmdStanMCMC object
+      data       = data, # original response matrix
+      stan_data  = stan_data, # what we sent to Stan
+      item_names = item_names, # question names
+      person_ids = person_ids, # student IDs
+      J          = J, # number of students
+      K          = K # number of questions
     ),
-    class = "bayesRasch_fit"    # our custom class name
+    class = "birt_fit" # our custom class name
   )
 
   out

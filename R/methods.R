@@ -2,27 +2,26 @@
 #'
 #' Shows a quick overview when you type the fitted object name.
 #'
-#' @param x A bayesRasch_fit object.
+#' @param x A birt_fit object.
 #' @param ... Ignored.
 #'
 #' @export
-print.bayesRasch_fit <- function(x, ...) {
-
+print.birt_fit <- function(x, ...) {
   # Header
-  cli::cli_h1("Bayesian Rasch Model ({.pkg bayesRasch})")
+  cli::cli_h1("Bayesian Rasch Model ({.pkg birt})")
   cli::cli_inform("Students: {x$J} | Questions: {x$K} | Observations: {x$stan_data$N}")
 
   # Missing data info
-  n_total   <- x$J * x$K                   # max possible observations
-  n_missing <- n_total - x$stan_data$N      # how many are missing
+  n_total <- x$J * x$K # max possible observations
+  n_missing <- n_total - x$stan_data$N # how many are missing
   if (n_missing > 0) {
     pct <- round(100 * n_missing / n_total, 1)
     cli::cli_inform("Missing responses: {n_missing} ({pct}%)")
   }
 
   # Quick convergence check
-  diag   <- x$fit$diagnostic_summary(quiet = TRUE)
-  n_div  <- sum(diag$num_divergent)
+  diag <- x$fit$diagnostic_summary(quiet = TRUE)
+  n_div <- sum(diag$num_divergent)
   n_tree <- sum(diag$num_max_treedepth)
 
   if (n_div > 0) {
@@ -48,13 +47,12 @@ print.bayesRasch_fit <- function(x, ...) {
 #' Displays item difficulties, person ability distribution, mean ability
 #' (delta), and convergence diagnostics.
 #'
-#' @param object A bayesRasch_fit object.
+#' @param object A birt_fit object.
 #' @param prob Credible interval width. Default 0.95.
 #' @param ... Ignored.
 #'
 #' @export
-summary.bayesRasch_fit <- function(object, prob = 0.95, ...) {
-
+summary.birt_fit <- function(object, prob = 0.95, ...) {
   cli::cli_h1("Bayesian Rasch Model Summary")
 
   # --- Delta (mean ability) ---
@@ -82,7 +80,7 @@ summary.bayesRasch_fit <- function(object, prob = 0.95, ...) {
   # --- Convergence diagnostics ---
   cli::cli_h2("Convergence Diagnostics")
   all_rhat <- c(d$rhat, items$rhat, persons$rhat)
-  all_ess  <- c(d$ess_bulk, items$ess_bulk, persons$ess_bulk)
+  all_ess <- c(d$ess_bulk, items$ess_bulk, persons$ess_bulk)
   cat(sprintf(
     "  Rhat range:       [%.4f, %.4f]  (want: all < 1.01)\n",
     min(all_rhat, na.rm = TRUE), max(all_rhat, na.rm = TRUE)
@@ -98,7 +96,7 @@ summary.bayesRasch_fit <- function(object, prob = 0.95, ...) {
 
 #' Plot a Rasch Model Fit
 #'
-#' @param x A bayesRasch_fit object.
+#' @param x A birt_fit object.
 #' @param type Which plot to make:
 #'   \describe{
 #'     \item{"icc"}{Item Characteristic Curves — P(correct) vs ability.}
@@ -110,17 +108,16 @@ summary.bayesRasch_fit <- function(object, prob = 0.95, ...) {
 #' @param ... Extra arguments passed to the plotting function.
 #'
 #' @export
-plot.bayesRasch_fit <- function(x, type = c("icc", "wright", "info", "trace"),
-                                items = NULL, ...) {
-
+plot.birt_fit <- function(x, type = c("icc", "wright", "info", "trace"),
+                          items = NULL, ...) {
   type <- match.arg(type)
 
   switch(type,
-         icc   = plot_icc(x, items = items, ...),
-         wright = plot_wright_map(x, ...),
-         info  = plot_info(x, items = items, ...),
-         trace = bayesplot::mcmc_trace(
-           x$fit$draws(variables = c("delta", "beta"))
-         )
+    icc = plot_icc(x, items = items, ...),
+    wright = plot_wright_map(x, ...),
+    info = plot_info(x, items = items, ...),
+    trace = bayesplot::mcmc_trace(
+      x$fit$draws(variables = c("delta", "beta"))
+    )
   )
 }

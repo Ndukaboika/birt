@@ -21,8 +21,7 @@
 #'
 #' @export
 item_params <- function(object, prob = 0.95) {
-
-  checkmate::assert_class(object, "bayesRasch_fit")
+  checkmate::assert_class(object, "birt_fit")
   checkmate::assert_number(prob, lower = 0, upper = 1)
 
   # Calculate quantile cutoffs
@@ -33,29 +32,29 @@ item_params <- function(object, prob = 0.95) {
 
   # ---- Compute summaries manually (avoids column naming issues) ----
   # apply(draws, 2, fun) applies 'fun' to each column (each item)
-  b_mean   <- apply(draws, 2, mean)
+  b_mean <- apply(draws, 2, mean)
   b_median <- apply(draws, 2, stats::median)
-  b_sd     <- apply(draws, 2, stats::sd)
-  b_lower  <- apply(draws, 2, stats::quantile, probs = probs[1])
-  b_upper  <- apply(draws, 2, stats::quantile, probs = probs[2])
+  b_sd <- apply(draws, 2, stats::sd)
+  b_lower <- apply(draws, 2, stats::quantile, probs = probs[1])
+  b_upper <- apply(draws, 2, stats::quantile, probs = probs[2])
 
   # Convergence diagnostics (these need the posterior package)
-  b_rhat     <- apply(draws, 2, posterior::rhat)
+  b_rhat <- apply(draws, 2, posterior::rhat)
   b_ess_bulk <- apply(draws, 2, posterior::ess_bulk)
   b_ess_tail <- apply(draws, 2, posterior::ess_tail)
 
   # Build a clean data frame
   data.frame(
-    item     = object$item_names,
-    mean     = b_mean,
-    median   = b_median,
-    sd       = b_sd,
-    q_lower  = b_lower,
-    q_upper  = b_upper,
-    rhat     = b_rhat,
+    item = object$item_names,
+    mean = b_mean,
+    median = b_median,
+    sd = b_sd,
+    q_lower = b_lower,
+    q_upper = b_upper,
+    rhat = b_rhat,
     ess_bulk = b_ess_bulk,
     ess_tail = b_ess_tail,
-    row.names = NULL,              # no row names
+    row.names = NULL, # no row names
     stringsAsFactors = FALSE
   )
 }
@@ -73,8 +72,7 @@ item_params <- function(object, prob = 0.95) {
 #'
 #' @export
 person_params <- function(object, prob = 0.95) {
-
-  checkmate::assert_class(object, "bayesRasch_fit")
+  checkmate::assert_class(object, "birt_fit")
   checkmate::assert_number(prob, lower = 0, upper = 1)
 
   probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
@@ -87,23 +85,23 @@ person_params <- function(object, prob = 0.95) {
   theta_draws <- alpha_draws + as.vector(delta_draws)
 
   # Compute summaries manually
-  t_mean     <- apply(theta_draws, 2, mean)
-  t_median   <- apply(theta_draws, 2, stats::median)
-  t_sd       <- apply(theta_draws, 2, stats::sd)
-  t_lower    <- apply(theta_draws, 2, stats::quantile, probs = probs[1])
-  t_upper    <- apply(theta_draws, 2, stats::quantile, probs = probs[2])
-  t_rhat     <- apply(theta_draws, 2, posterior::rhat)
+  t_mean <- apply(theta_draws, 2, mean)
+  t_median <- apply(theta_draws, 2, stats::median)
+  t_sd <- apply(theta_draws, 2, stats::sd)
+  t_lower <- apply(theta_draws, 2, stats::quantile, probs = probs[1])
+  t_upper <- apply(theta_draws, 2, stats::quantile, probs = probs[2])
+  t_rhat <- apply(theta_draws, 2, posterior::rhat)
   t_ess_bulk <- apply(theta_draws, 2, posterior::ess_bulk)
   t_ess_tail <- apply(theta_draws, 2, posterior::ess_tail)
 
   data.frame(
-    person   = object$person_ids,
-    mean     = t_mean,
-    median   = t_median,
-    sd       = t_sd,
-    q_lower  = t_lower,
-    q_upper  = t_upper,
-    rhat     = t_rhat,
+    person = object$person_ids,
+    mean = t_mean,
+    median = t_median,
+    sd = t_sd,
+    q_lower = t_lower,
+    q_upper = t_upper,
+    rhat = t_rhat,
     ess_bulk = t_ess_bulk,
     ess_tail = t_ess_tail,
     row.names = NULL,
@@ -123,8 +121,7 @@ person_params <- function(object, prob = 0.95) {
 #'
 #' @export
 delta_param <- function(object, prob = 0.95) {
-
-  checkmate::assert_class(object, "bayesRasch_fit")
+  checkmate::assert_class(object, "birt_fit")
   checkmate::assert_number(prob, lower = 0, upper = 1)
 
   probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
@@ -136,12 +133,12 @@ delta_param <- function(object, prob = 0.95) {
   d <- as.vector(draws)
 
   data.frame(
-    mean     = mean(d),
-    median   = stats::median(d),
-    sd       = stats::sd(d),
-    q_lower  = stats::quantile(d, probs = probs[1], names = FALSE),
-    q_upper  = stats::quantile(d, probs = probs[2], names = FALSE),
-    rhat     = posterior::rhat(draws),
+    mean = mean(d),
+    median = stats::median(d),
+    sd = stats::sd(d),
+    q_lower = stats::quantile(d, probs = probs[1], names = FALSE),
+    q_upper = stats::quantile(d, probs = probs[2], names = FALSE),
+    rhat = posterior::rhat(draws),
     ess_bulk = posterior::ess_bulk(draws),
     ess_tail = posterior::ess_tail(draws),
     row.names = NULL,

@@ -1,4 +1,4 @@
-# This runs when someone loads the package with library(bayesRasch)
+# This runs when someone loads the package with library(birt)
 # .onAttach is the correct place for startup messages (not .onLoad)
 .onAttach <- function(libname, pkgname) {
   if (requireNamespace("cmdstanr", quietly = TRUE)) {

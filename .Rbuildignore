@@ -3,3 +3,5 @@
 ^data-raw$
 ^LICENSE\.md$
 ^inst/stan/bayesRasch$
+^birt\.Rproj$
+^\.Rproj\.user$

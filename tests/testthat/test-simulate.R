@@ -1,5 +1,4 @@
 test_that("rasch_simulate returns correct structure", {
-
   sim <- rasch_simulate(J = 50, K = 5, seed = 123)
 
   # Should return a list with 4 elements
@@ -19,14 +18,12 @@ test_that("rasch_simulate returns correct structure", {
 })
 
 test_that("rasch_simulate validates inputs", {
-
   # Can't have fewer than 2 students or items
   expect_error(rasch_simulate(J = 1))
   expect_error(rasch_simulate(K = 1))
 })
 
 test_that("rasch_fit rejects bad data", {
-
   # Non-binary data should fail
   bad_data <- matrix(c(0, 1, 2, 1), nrow = 2)
   expect_error(rasch_fit(bad_data), "0 or 1")
@@ -35,8 +32,3 @@ test_that("rasch_fit rejects bad data", {
   expect_error(rasch_fit(matrix(c(0, 1), nrow = 1)), "at least 2")
   expect_error(rasch_fit(matrix(c(0, 1), ncol = 1)), "at least 2")
 })
-
-
-
-
-

@@ -13,7 +13,7 @@ plot_info(
 )
 }
 \arguments{
-\item{object}{A bayesRasch_fit object.}
+\item{object}{A birt_fit object.}
 
 \item{items}{Which items to include. Default: all.}
 

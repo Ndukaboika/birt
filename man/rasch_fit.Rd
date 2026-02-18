@@ -34,7 +34,7 @@ Total posterior draws = chains * iter_sampling (default: 4000).}
 \item{...}{Extra arguments passed to cmdstanr's sample() method.}
 }
 \value{
-An object of class "bayesRasch_fit" containing:
+An object of class "birt_fit" containing:
 \describe{
 \item{fit}{The CmdStanMCMC fit object (for advanced use).}
 \item{data}{The original response matrix.}

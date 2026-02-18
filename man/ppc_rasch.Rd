@@ -7,7 +7,7 @@
 ppc_rasch(object, nsamples = 100)
 }
 \arguments{
-\item{object}{A bayesRasch_fit object from rasch_fit().}
+\item{object}{A birt_fit object from rasch_fit().}
 
 \item{nsamples}{Number of posterior predictive draws (default = 100).}
 }

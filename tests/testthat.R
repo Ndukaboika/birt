@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(bayesRasch)
+library(birt)
 
-test_check("bayesRasch")
+test_check("birt")

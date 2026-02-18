@@ -1,4 +1,4 @@
-Package: bayesRasch
+Package: birt
 Title: Bayesian Rasch Models via CmdStan
 Version: 0.1.0
 Authors@R: person("Nduka", "Boika", email = "Boikanduka@gmail.com", role = c("aut", "cre"))
@@ -8,8 +8,8 @@ Description: Fit Bayesian dichotomous Rasch models using CmdStan via the
     including item characteristic curves, Wright maps, and test information 
     functions.
 License: MIT + file LICENSE
-URL: https://github.com/ndukaboika/bayesRasch
-BugReports: https://github.com/Ndukaboika/bayesRasch/issues
+URL: https://github.com/ndukaboika/birt
+BugReports: https://github.com/Ndukaboika/birt/issues
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.3
