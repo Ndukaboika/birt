@@ -21,7 +21,7 @@
 #'
 #' @export
 item_params <- function(object, prob = 0.95) {
-  checkmate::assert_class(object, "birt_fit")
+  assert_birt_fit(object)
   checkmate::assert_number(prob, lower = 0, upper = 1)
 
   # Calculate quantile cutoffs
@@ -72,7 +72,7 @@ item_params <- function(object, prob = 0.95) {
 #'
 #' @export
 person_params <- function(object, prob = 0.95) {
-  checkmate::assert_class(object, "birt_fit")
+  assert_birt_fit(object)
   checkmate::assert_number(prob, lower = 0, upper = 1)
 
   probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
@@ -121,7 +121,7 @@ person_params <- function(object, prob = 0.95) {
 #'
 #' @export
 delta_param <- function(object, prob = 0.95) {
-  checkmate::assert_class(object, "birt_fit")
+  assert_birt_fit(object)
   checkmate::assert_number(prob, lower = 0, upper = 1)
 
   probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
@@ -141,6 +141,79 @@ delta_param <- function(object, prob = 0.95) {
     rhat = posterior::rhat(draws),
     ess_bulk = posterior::ess_bulk(draws),
     ess_tail = posterior::ess_tail(draws),
+    row.names = NULL,
+    stringsAsFactors = FALSE
+  )
+}
+
+
+#' Extract Discrimination Estimates (a)
+#'
+#' Returns item discrimination estimates from a 2PL or 3PL fit.
+#'
+#' @param object A fitted 2PL or 3PL model.
+#' @param prob Credible interval width. Default 0.95.
+#'
+#' @return A data frame with one row per item.
+#'
+#' @export
+discrim_params <- function(object, prob = 0.95) {
+
+  if (!inherits(object, c("birt_2pl_fit", "birt_3pl_fit"))) {
+    cli::cli_abort("Discrimination is only available for 2PL and 3PL models.")
+  }
+  checkmate::assert_number(prob, lower = 0, upper = 1)
+
+  probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
+
+  draws <- posterior::as_draws_matrix(object$fit$draws("a"))
+
+  data.frame(
+    item     = object$item_names,
+    mean     = apply(draws, 2, mean),
+    median   = apply(draws, 2, stats::median),
+    sd       = apply(draws, 2, stats::sd),
+    q_lower  = apply(draws, 2, stats::quantile, probs = probs[1]),
+    q_upper  = apply(draws, 2, stats::quantile, probs = probs[2]),
+    rhat     = apply(draws, 2, posterior::rhat),
+    ess_bulk = apply(draws, 2, posterior::ess_bulk),
+    ess_tail = apply(draws, 2, posterior::ess_tail),
+    row.names = NULL,
+    stringsAsFactors = FALSE
+  )
+}
+
+#' Extract Guessing Parameter Estimates (c)
+#'
+#' Returns guessing parameter estimates from a 3PL fit.
+#'
+#' @param object A fitted 3PL model.
+#' @param prob Credible interval width. Default 0.95.
+#'
+#' @return A data frame with one row per item.
+#'
+#' @export
+guessing_params <- function(object, prob = 0.95) {
+
+  if (!inherits(object, "birt_3pl_fit")) {
+    cli::cli_abort("Guessing parameters are only available for 3PL models.")
+  }
+  checkmate::assert_number(prob, lower = 0, upper = 1)
+
+  probs <- c((1 - prob) / 2, 1 - (1 - prob) / 2)
+
+  draws <- posterior::as_draws_matrix(object$fit$draws("c"))
+
+  data.frame(
+    item     = object$item_names,
+    mean     = apply(draws, 2, mean),
+    median   = apply(draws, 2, stats::median),
+    sd       = apply(draws, 2, stats::sd),
+    q_lower  = apply(draws, 2, stats::quantile, probs = probs[1]),
+    q_upper  = apply(draws, 2, stats::quantile, probs = probs[2]),
+    rhat     = apply(draws, 2, posterior::rhat),
+    ess_bulk = apply(draws, 2, posterior::ess_bulk),
+    ess_tail = apply(draws, 2, posterior::ess_tail),
     row.names = NULL,
     stringsAsFactors = FALSE
   )

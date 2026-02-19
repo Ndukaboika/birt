@@ -7,7 +7,7 @@
 item_fit(object)
 }
 \arguments{
-\item{object}{A birt_fit object.}
+\item{object}{A fitted model from rasch_fit(), twopl_fit(), or threepl_fit().}
 }
 \value{
 A data frame with columns: item, obs_prop, exp_prop, outfit, infit.

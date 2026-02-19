@@ -12,43 +12,54 @@
 #'
 #' @return A ggplot2 object.
 #' @export
+#' @export
 plot_icc <- function(object, items = NULL, theta_range = c(-4, 4),
                      ci = TRUE, ...) {
-  checkmate::assert_class(object, "birt_fit")
+
+  assert_birt_fit(object)
+  model <- get_model_name(object)
 
   K <- object$K
   if (is.null(items)) items <- seq_len(K)
 
-  # Get posterior draws for beta
   b_draws <- posterior::as_draws_matrix(object$fit$draws("beta"))
-
-  # Posterior mean and 95% interval for each item
-  b_mean <- apply(b_draws, 2, mean)
+  b_mean  <- apply(b_draws, 2, mean)
   b_lower <- apply(b_draws, 2, stats::quantile, probs = 0.025)
   b_upper <- apply(b_draws, 2, stats::quantile, probs = 0.975)
 
-  # Fine grid of ability values for smooth curves
+  # Get discrimination if 2PL or 3PL
+  if (model %in% c("2PL", "3PL")) {
+    a_draws <- posterior::as_draws_matrix(object$fit$draws("a"))
+    a_mean  <- apply(a_draws, 2, mean)
+  } else {
+    a_mean <- rep(1, K)  # Rasch: all discriminations = 1
+  }
+
+  # Get guessing if 3PL
+  if (model == "3PL") {
+    c_draws <- posterior::as_draws_matrix(object$fit$draws("c"))
+    c_mean  <- apply(c_draws, 2, mean)
+  } else {
+    c_mean <- rep(0, K)  # No guessing
+  }
+
   theta_seq <- seq(theta_range[1], theta_range[2], length.out = 200)
 
-  # Build plot data: one row per (theta, item) combination
   plot_data <- do.call(rbind, lapply(items, function(i) {
-    # ICC: P(correct) = plogis(ability - difficulty)
-    p_mean <- stats::plogis(theta_seq - b_mean[i])
-    # Note the "flip": higher beta = lower P, so bounds swap
-    p_lower <- stats::plogis(theta_seq - b_upper[i])
-    p_upper <- stats::plogis(theta_seq - b_lower[i])
+    p_mean <- c_mean[i] + (1 - c_mean[i]) * stats::plogis(a_mean[i] * (theta_seq - b_mean[i]))
+
+    # Simplified CI (based on difficulty uncertainty only)
+    p_lower <- c_mean[i] + (1 - c_mean[i]) * stats::plogis(a_mean[i] * (theta_seq - b_upper[i]))
+    p_upper <- c_mean[i] + (1 - c_mean[i]) * stats::plogis(a_mean[i] * (theta_seq - b_lower[i]))
 
     data.frame(
-      theta = theta_seq,
-      p = p_mean,
-      p_lower = p_lower,
-      p_upper = p_upper,
+      theta = theta_seq, p = p_mean,
+      p_lower = p_lower, p_upper = p_upper,
       item = object$item_names[i],
       stringsAsFactors = FALSE
     )
   }))
 
-  # Build the ggplot
   p <- ggplot2::ggplot(plot_data, ggplot2::aes(
     x = .data$theta, y = .data$p, color = .data$item
   )) +
@@ -56,24 +67,20 @@ plot_icc <- function(object, items = NULL, theta_range = c(-4, 4),
 
   if (ci) {
     p <- p + ggplot2::geom_ribbon(
-      ggplot2::aes(
-        ymin = .data$p_lower, ymax = .data$p_upper, fill = .data$item
-      ),
+      ggplot2::aes(ymin = .data$p_lower, ymax = .data$p_upper, fill = .data$item),
       alpha = 0.15, colour = NA
     )
   }
 
   p + ggplot2::geom_hline(yintercept = 0.5, linetype = "dashed", alpha = 0.4) +
     ggplot2::labs(
-      x = "Person Ability (logits)",
-      y = "P(Correct)",
-      title = "Item Characteristic Curves",
+      x = "Person Ability (logits)", y = "P(Correct)",
+      title = paste(model, "Item Characteristic Curves"),
       color = "Item", fill = "Item"
     ) +
     ggplot2::theme_minimal(base_size = 12) +
     ggplot2::ylim(0, 1)
 }
-
 
 #' Wright Map (Item-Person Map)
 #'
@@ -86,7 +93,7 @@ plot_icc <- function(object, items = NULL, theta_range = c(-4, 4),
 #' @return A ggplot2 object.
 #' @export
 plot_wright_map <- function(object, ...) {
-  checkmate::assert_class(object, "birt_fit")
+  assert_birt_fit(object)
 
   # Person total abilities (alpha + delta)
   persons <- person_params(object)
@@ -146,25 +153,50 @@ plot_wright_map <- function(object, ...) {
 #'
 #' @return A ggplot2 object.
 #' @export
+#' @export
 plot_info <- function(object, items = NULL, theta_range = c(-4, 4),
                       show_items = FALSE, ...) {
-  checkmate::assert_class(object, "birt_fit")
+
+  assert_birt_fit(object)
+  model <- get_model_name(object)
 
   K <- object$K
   if (is.null(items)) items <- seq_len(K)
 
   b_draws <- posterior::as_draws_matrix(object$fit$draws("beta"))
-  b_mean <- apply(b_draws, 2, mean)
+  b_mean  <- apply(b_draws, 2, mean)
+
+  if (model %in% c("2PL", "3PL")) {
+    a_draws <- posterior::as_draws_matrix(object$fit$draws("a"))
+    a_mean  <- apply(a_draws, 2, mean)
+  } else {
+    a_mean <- rep(1, K)
+  }
+
+  if (model == "3PL") {
+    c_draws <- posterior::as_draws_matrix(object$fit$draws("c"))
+    c_mean  <- apply(c_draws, 2, mean)
+  } else {
+    c_mean <- rep(0, K)
+  }
 
   theta_seq <- seq(theta_range[1], theta_range[2], length.out = 200)
 
-  # Item information: I(theta) = P(theta) * (1 - P(theta))
+  # Item information formula:
+  # Rasch: I = P * Q
+  # 2PL:   I = a^2 * P * Q
+  # 3PL:   I = a^2 * (P - c)^2 / ((1 - c)^2 * P * Q)
   info_matrix <- sapply(items, function(i) {
-    p <- stats::plogis(theta_seq - b_mean[i])
-    p * (1 - p)
+    p <- c_mean[i] + (1 - c_mean[i]) * stats::plogis(a_mean[i] * (theta_seq - b_mean[i]))
+    q <- 1 - p
+
+    if (model == "3PL") {
+      a_mean[i]^2 * ((p - c_mean[i])^2) / ((1 - c_mean[i])^2 * p * q)
+    } else {
+      a_mean[i]^2 * p * q
+    }
   })
 
-  # Test information = sum across items
   test_info <- rowSums(info_matrix)
   plot_df <- data.frame(theta = theta_seq, info = test_info)
 
@@ -176,8 +208,7 @@ plot_info <- function(object, items = NULL, theta_range = c(-4, 4),
   if (show_items) {
     item_info_df <- do.call(rbind, lapply(seq_along(items), function(j) {
       data.frame(
-        theta = theta_seq,
-        info = info_matrix[, j],
+        theta = theta_seq, info = info_matrix[, j],
         item = object$item_names[items[j]],
         stringsAsFactors = FALSE
       )
@@ -185,19 +216,13 @@ plot_info <- function(object, items = NULL, theta_range = c(-4, 4),
 
     p <- p + ggplot2::geom_line(
       data = item_info_df,
-      ggplot2::aes(
-        x = .data$theta, y = .data$info, color = .data$item
-      ),
+      ggplot2::aes(x = .data$theta, y = .data$info, color = .data$item),
       linewidth = 0.5, alpha = 0.7
-    ) +
-      ggplot2::labs(color = "Item")
+    ) + ggplot2::labs(color = "Item")
   }
 
   p + ggplot2::labs(
-    x = "Person Ability (logits)",
-    y = "Information",
-    title = "Test Information Function",
-    subtitle = "Higher = more precise measurement"
-  ) +
-    ggplot2::theme_minimal(base_size = 12)
+    x = "Person Ability (logits)", y = "Information",
+    title = paste(model, "Test Information Function")
+  ) + ggplot2::theme_minimal(base_size = 12)
 }

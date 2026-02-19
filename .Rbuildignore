@@ -5,3 +5,4 @@
 ^inst/stan/bayesRasch$
 ^birt\.Rproj$
 ^\.Rproj\.user$
+^inst/stan/[^.]*$

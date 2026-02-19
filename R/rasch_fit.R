@@ -119,9 +119,9 @@ rasch_fit <- function(data,
   # ==============================================================
 
   # system.file() finds where the .stan file was installed
-  # When someone installs the package, inst/stan/birt.stan
+  # When someone installs the package, inst/stan/rasch.stan
   # becomes accessible at this path
-  stan_file <- system.file("stan", "birt.stan", package = "birt")
+  stan_file <- system.file("stan", "rasch.stan", package = "birt")
 
   # If it's not found, the package wasn't installed properly
   if (stan_file == "") {

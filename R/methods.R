@@ -121,3 +121,127 @@ plot.birt_fit <- function(x, type = c("icc", "wright", "info", "trace"),
     )
   )
 }
+
+
+#' @export
+print.birt_2pl_fit <- function(x, ...) {
+  cli::cli_h1("Bayesian 2PL IRT Model ({.pkg birt})")
+  cli::cli_inform("Students: {x$J} | Questions: {x$K} | Observations: {x$stan_data$N}")
+
+  diag <- x$fit$diagnostic_summary(quiet = TRUE)
+  n_div <- sum(diag$num_divergent)
+  if (n_div > 0) {
+    cli::cli_warn("{n_div} divergent transition{?s} detected!")
+  } else {
+    cli::cli_inform("Diagnostics: No divergences or treedepth warnings.")
+  }
+
+  cli::cli_inform("")
+  cli::cli_inform("Use {.fn summary} for parameter estimates.")
+  cli::cli_inform("Use {.fn discrim_params} for discrimination estimates.")
+  invisible(x)
+}
+
+
+#' @export
+print.birt_3pl_fit <- function(x, ...) {
+  cli::cli_h1("Bayesian 3PL IRT Model ({.pkg birt})")
+  cli::cli_inform("Students: {x$J} | Questions: {x$K} | Observations: {x$stan_data$N}")
+
+  diag <- x$fit$diagnostic_summary(quiet = TRUE)
+  n_div <- sum(diag$num_divergent)
+  if (n_div > 0) {
+    cli::cli_warn("{n_div} divergent transition{?s} detected!")
+  } else {
+    cli::cli_inform("Diagnostics: No divergences or treedepth warnings.")
+  }
+
+  cli::cli_inform("")
+  cli::cli_inform("Use {.fn summary} for parameter estimates.")
+  cli::cli_inform("Use {.fn discrim_params} for discrimination estimates.")
+  cli::cli_inform("Use {.fn guessing_params} for guessing parameter estimates.")
+  invisible(x)
+}
+
+
+#' @export
+summary.birt_2pl_fit <- function(object, prob = 0.95, ...) {
+  cli::cli_h1("Bayesian 2PL IRT Model Summary")
+
+  cli::cli_h2("Mean Ability (delta)")
+  d <- delta_param(object, prob = prob)
+  cat(sprintf("  Estimate: %.3f [%.3f, %.3f]\n", d$mean, d$q_lower, d$q_upper))
+
+  cli::cli_h2("Item Difficulties (beta)")
+  items <- item_params(object, prob = prob)
+  print(items, digits = 3, row.names = FALSE)
+
+  cli::cli_h2("Item Discriminations (a)")
+  disc <- discrim_params(object, prob = prob)
+  print(disc, digits = 3, row.names = FALSE)
+
+  cli::cli_h2("Person Ability Summary (alpha + delta)")
+  persons <- person_params(object, prob = prob)
+  cat(sprintf("  Mean: %.3f (SD = %.3f)\n  Range: [%.3f, %.3f]\n",
+              mean(persons$mean), stats::sd(persons$mean),
+              min(persons$mean), max(persons$mean)))
+
+  invisible(list(delta = d, items = items, discrimination = disc, persons = persons))
+}
+
+
+#' @export
+summary.birt_3pl_fit <- function(object, prob = 0.95, ...) {
+  cli::cli_h1("Bayesian 3PL IRT Model Summary")
+
+  cli::cli_h2("Mean Ability (delta)")
+  d <- delta_param(object, prob = prob)
+  cat(sprintf("  Estimate: %.3f [%.3f, %.3f]\n", d$mean, d$q_lower, d$q_upper))
+
+  cli::cli_h2("Item Difficulties (beta)")
+  items <- item_params(object, prob = prob)
+  print(items, digits = 3, row.names = FALSE)
+
+  cli::cli_h2("Item Discriminations (a)")
+  disc <- discrim_params(object, prob = prob)
+  print(disc, digits = 3, row.names = FALSE)
+
+  cli::cli_h2("Guessing Parameters (c)")
+  guess <- guessing_params(object, prob = prob)
+  print(guess, digits = 3, row.names = FALSE)
+
+  cli::cli_h2("Person Ability Summary (alpha + delta)")
+  persons <- person_params(object, prob = prob)
+  cat(sprintf("  Mean: %.3f (SD = %.3f)\n  Range: [%.3f, %.3f]\n",
+              mean(persons$mean), stats::sd(persons$mean),
+              min(persons$mean), max(persons$mean)))
+
+  invisible(list(delta = d, items = items, discrimination = disc,
+                 guessing = guess, persons = persons))
+}
+
+
+#' @export
+plot.birt_2pl_fit <- function(x, type = c("icc", "wright", "info", "trace"),
+                              items = NULL, ...) {
+  type <- match.arg(type)
+  switch(type,
+         icc   = plot_icc(x, items = items, ...),
+         wright = plot_wright_map(x, ...),
+         info  = plot_info(x, items = items, ...),
+         trace = bayesplot::mcmc_trace(x$fit$draws(variables = c("delta", "beta", "a")))
+  )
+}
+
+
+#' @export
+plot.birt_3pl_fit <- function(x, type = c("icc", "wright", "info", "trace"),
+                              items = NULL, ...) {
+  type <- match.arg(type)
+  switch(type,
+         icc   = plot_icc(x, items = items, ...),
+         wright = plot_wright_map(x, ...),
+         info  = plot_info(x, items = items, ...),
+         trace = bayesplot::mcmc_trace(x$fit$draws(variables = c("delta", "beta", "a", "c")))
+  )
+}
