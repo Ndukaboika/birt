@@ -6,6 +6,10 @@
 \usage{
 twopl_fit(
   data,
+  prior_delta = c(0.75, 1),
+  prior_alpha_sd = 1,
+  prior_beta_sd = 1,
+  prior_a = c(0, 0.5),
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
@@ -17,6 +21,16 @@ twopl_fit(
 \arguments{
 \item{data}{A matrix or data frame of binary (0/1) responses.
 Rows = students, Columns = questions. NA is allowed.}
+
+\item{prior_delta}{Prior for mean ability: \code{c(mean, sd)}.
+Default \code{c(0.75, 1)}.}
+
+\item{prior_alpha_sd}{Prior SD for student ability deviations. Default 1.}
+
+\item{prior_beta_sd}{Prior SD for item difficulties. Default 1.}
+
+\item{prior_a}{Prior for discrimination (lognormal): \code{c(meanlog, sdlog)}.
+Default \code{c(0, 0.5)} means LogNormal(0, 0.5), centered around 1.0.}
 
 \item{chains}{Number of MCMC chains. Default 4.}
 
@@ -31,30 +45,25 @@ Rows = students, Columns = questions. NA is allowed.}
 \item{...}{Extra arguments passed to cmdstanr's sample() method.}
 }
 \value{
-An object of class "birt_2pl_fit".
+An object of class \code{birt_2pl_fit}.
 }
 \description{
 Fits a two-parameter logistic IRT model using CmdStan.
-Extends the Rasch model by adding an item discrimination parameter (a)
-that controls how steeply each item's ICC rises.
-}
-\details{
-#' The model is:
+The model is:
 \code{logit(P(correct)) = a_k * (alpha_j + delta - beta_k)}
-
-Where:
-\itemize{
-\item delta = overall mean ability
-\item alpha_j = student j's deviation from mean ability
-\item beta_k = difficulty of question k
-\item a_k = discrimination of question k (NEW vs Rasch)
-}
 }
 \examples{
 \dontrun{
 sim <- rasch_simulate(J = 300, K = 10, seed = 42)
-fit <- twopl_fit(sim$data, seed = 123)
-summary(fit)
+
+# Default priors
+fit2 <- twopl_fit(sim$data, seed = 123)
+
+# Custom priors
+fit2 <- twopl_fit(sim$data,
+  prior_a = c(0, 1),
+  seed = 123
+)
 }
 
 }

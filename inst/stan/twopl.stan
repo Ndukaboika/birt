@@ -1,5 +1,6 @@
 
-// Rasch IRT model
+// Two-Parameter Logistic (2PL) IRT model with user-configurable priors
+// logit(P(correct)) = a[k] * (alpha[j] + delta - beta[k])
 //
 // This model estimates:
 //   delta    = overall mean ability of the student population
@@ -12,29 +13,36 @@
 //   logit(P(y = 1)) = alpha[j] - beta[k] + delta
 
 
+
 data {
-  int<lower=1> J;                          // number of students
-  int<lower=1> K;                          // number of questions
-  int<lower=1> N;                          // number of observations
-  array[N] int<lower=1, upper=J> jj;       // student for observation n
-  array[N] int<lower=1, upper=K> kk;       // question for observation n
-  array[N] int<lower=0, upper=1> y;        // correctness for observation n
+  int<lower=1> J;
+  int<lower=1> K;
+  int<lower=1> N;
+  array[N] int<lower=1, upper=J> jj;
+  array[N] int<lower=1, upper=K> kk;
+  array[N] int<lower=0, upper=1> y;
+
+  // Prior hyperparameters (passed from R)
+  real prior_delta_mean;
+  real<lower=0> prior_delta_sd;
+  real<lower=0> prior_alpha_sd;
+  real<lower=0> prior_beta_sd;
+  real prior_a_meanlog;
+  real<lower=0> prior_a_sdlog;
 }
 
 parameters {
-  real delta;                     // mean student ability
-  vector[J] alpha;                // ability of student j - mean ability
-  vector[K] beta;                 // difficulty of question k
-  vector<lower=0>[K] a;           // item discriminations (must be positive)
+  real delta;
+  vector[J] alpha;
+  vector[K] beta;
+  vector<lower=0>[K] a;
 }
 
 model {
-  // Priors
-  alpha ~ std_normal();
-  beta ~ std_normal();
-  delta ~ normal(0.75, 1);
-  a ~ lognormal(0, 0.5);
+  alpha ~ normal(0, prior_alpha_sd);
+  beta ~ normal(0, prior_beta_sd);
+  delta ~ normal(prior_delta_mean, prior_delta_sd);
+  a ~ lognormal(prior_a_meanlog, prior_a_sdlog);
 
-  // Likelihood (vectorized)
- y ~ bernoulli_logit(a[kk] .* (alpha[jj] + delta - beta[kk]));
+  y ~ bernoulli_logit(a[kk] .* (alpha[jj] + delta - beta[kk]));
 }

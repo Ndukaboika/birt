@@ -2,10 +2,13 @@
 % Please edit documentation in R/rasch_fit.R
 \name{rasch_fit}
 \alias{rasch_fit}
-\title{Fit a Bayesian Rasch Model}
+\title{Fit a Bayesian Rasch (1PL) IRT Model}
 \usage{
 rasch_fit(
   data,
+  prior_delta = c(0.75, 1),
+  prior_alpha_sd = 1,
+  prior_beta_sd = 1,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
@@ -16,52 +19,51 @@ rasch_fit(
 }
 \arguments{
 \item{data}{A matrix or data frame of binary (0/1) responses.
-Rows = students, Columns = questions. NA is allowed (missing data).}
+Rows = students, Columns = questions. NA is allowed.}
 
-\item{chains}{Number of MCMC chains. Default 4. More chains = better
-convergence diagnostics but takes longer.}
+\item{prior_delta}{Prior for mean ability: \code{c(mean, sd)}.
+Default \code{c(0.75, 1)} means Normal(0.75, 1).}
 
-\item{parallel_chains}{How many chains to run at the same time. Default 4.}
+\item{prior_alpha_sd}{Prior SD for student ability deviations.
+Default 1 means alpha ~ Normal(0, 1).}
 
-\item{iter_warmup}{Warmup iterations per chain (discarded). Default 1000.
-The sampler uses these to find the right region of parameter space.}
+\item{prior_beta_sd}{Prior SD for item difficulties.
+Default 1 means beta ~ Normal(0, 1).}
 
-\item{iter_sampling}{Sampling iterations per chain (kept). Default 1000.
-Total posterior draws = chains * iter_sampling (default: 4000).}
+\item{chains}{Number of MCMC chains. Default 4.}
+
+\item{parallel_chains}{Chains to run in parallel. Default 4.}
+
+\item{iter_warmup}{Warmup iterations per chain. Default 1000.}
+
+\item{iter_sampling}{Sampling iterations per chain. Default 1000.}
 
 \item{seed}{Random seed for reproducibility.}
 
-\item{...}{Extra arguments passed to cmdstanr's sample() method.}
+\item{...}{Extra arguments passed to cmdstanr's sample() method
+(e.g., \code{adapt_delta = 0.95}).}
 }
 \value{
-An object of class "birt_fit" containing:
-\describe{
-\item{fit}{The CmdStanMCMC fit object (for advanced use).}
-\item{data}{The original response matrix.}
-\item{stan_data}{The data list that was passed to Stan.}
-\item{item_names}{Character vector of question names.}
-\item{person_ids}{Character vector of student IDs.}
-\item{J}{Number of students.}
-\item{K}{Number of questions.}
-}
+An object of class \code{birt_fit}.
 }
 \description{
-This is the main function of the package. Give it a matrix of 0/1
-responses and it will estimate student abilities and item difficulties
-using Bayesian MCMC sampling via CmdStan.
-}
-\details{
-The model is:
-logit(P(correct)) = alpha[j] + delta - beta[k]
-
-Where delta is the overall mean ability, alpha[j] is student j's
-deviation from the mean, and beta[k] is the difficulty of question k.
+Fits a Rasch model using CmdStan. The model is:
+\code{logit(P(correct)) = alpha_j + delta - beta_k}
 }
 \examples{
 \dontrun{
 sim <- rasch_simulate(J = 200, K = 10, seed = 42)
+
+# Default priors
 fit <- rasch_fit(sim$data, seed = 123)
-summary(fit)
+
+# Custom priors
+fit <- rasch_fit(sim$data,
+  prior_delta = c(0, 2),
+  prior_alpha_sd = 2,
+  prior_beta_sd = 2,
+  seed = 123
+)
 }
 
 }
