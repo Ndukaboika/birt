@@ -17,24 +17,22 @@ knitr::opts_chunk$set(
 
 ## What is birt?
 
-**birt** (Bayesian IRT) is an R package for fitting Item Response Theory models using Bayesian estimation via CmdStan. It currently supports three dichotomous IRT models:
+**birt** (Bayesian IRT) is an R package for fitting Item Response Theory models
+using Bayesian estimation via CmdStan. It supports three dichotomous IRT models:
 
--   **Rasch (1PL)**: The simplest IRT model — assumes all items discriminate equally.
--   **2PL**: Adds an item-specific discrimination parameter that controls how sharply each item separates high-ability from low-ability examinees.
--   **3PL**: Adds a guessing (pseudo-chance) parameter, acknowledging that even very low-ability examinees may guess correctly on multiple-choice items.
+- **Rasch (1PL)**: Every item has the same discrimination (items differ only in difficulty).
+- **2PL**: Each item gets its own discrimination parameter controlling how sharply
+  it separates students of different ability.
+- **3PL**: Adds a guessing parameter representing the probability of a correct
+  response by pure chance.
 
-### Why Bayesian?
-
-Traditional IRT software uses Maximum Likelihood Estimation (MLE). Bayesian estimation via MCMC offers several advantages:
-
--   **Full uncertainty quantification**: You get credible intervals for every parameter, not just point estimates.
--   **Works with small samples**: MLE can fail or produce extreme estimates with small samples. Priors stabilize Bayesian estimates.
--   **Missing data handled naturally**: The Bayesian framework simply integrates over unknown responses.
--   **Model diagnostics built in**: Posterior predictive checks and leave-one-out cross-validation are straightforward.
+All models are estimated using Hamiltonian Monte Carlo via CmdStan, producing full
+posterior distributions for every parameter. This means you get credible intervals,
+convergence diagnostics, and posterior predictive checks — not just point estimates.
 
 ## Installation
 
-birt requires CmdStan (the C++ Bayesian engine) installed on your computer.
+birt requires CmdStan installed on your computer.
 
 ```{r}
 # Step 1: Install cmdstanr (the R interface to CmdStan)
@@ -43,111 +41,141 @@ install.packages("cmdstanr", repos = c(
   getOption("repos")
 ))
 
-# Step 2: Install CmdStan itself (takes a few minutes)
+# Step 2: Install CmdStan itself (~5 minutes)
 cmdstanr::install_cmdstan()
 
 # Step 3: Install birt from GitHub
-# install.packages("pak")
+install.packages("pak")
 pak::pak("Ndukaboika/birt")
 ```
 
-Verify everything works:
+Verify the installation:
 
 ```{r}
-cmdstanr::cmdstan_version()  # Should print a version number
+cmdstanr::cmdstan_version()
 library(birt)
 ```
 
-## The IRT Models
+## The Models
 
-All three models share the same core idea: the probability of a correct response depends on the difference between a person's ability and an item's difficulty. They differ in how many item parameters they estimate.
+All three models share a core idea: the probability of a correct response depends on
+the difference between a person's ability and an item's difficulty. They differ in how
+many item parameters they estimate.
 
 ### Rasch Model (1PL)
 
-The simplest model. Every item has the same discrimination — items only differ in difficulty.
-
 $$\text{logit}(P(Y_{jk} = 1)) = \alpha_j + \delta - \beta_k$$
 
-Where:
+- $\delta$ = overall mean ability
+- $\alpha_j$ = how student $j$ deviates from the mean
+- $\beta_k$ = difficulty of item $k$
+- Total ability: $\theta_j = \alpha_j + \delta$
 
--   $\alpha_j$ = how student $j$ deviates from the mean ability
--   $\delta$ = the overall mean ability in the population
--   $\beta_k$ = the difficulty of item $k$
+When ability equals difficulty ($\theta_j = \beta_k$), P(correct) = 0.5.
 
-A student's **total ability** is $\theta_j = \alpha_j + \delta$. When ability equals difficulty ($\theta_j = \beta_k$), the student has a 50% chance of answering correctly.
-
-### Two-Parameter Logistic Model (2PL)
-
-Adds a **discrimination** parameter $a_k$ that controls how steeply each item's probability curve rises. Items with high discrimination are better at separating students of different ability levels.
+### 2PL Model
 
 $$\text{logit}(P(Y_{jk} = 1)) = a_k \cdot (\alpha_j + \delta - \beta_k)$$
 
-When $a_k = 1$, this reduces to the Rasch model. When $a_k > 1$, the item is more discriminating (steeper ICC). When $a_k < 1$, the item is less discriminating (flatter ICC).
+Adds discrimination $a_k$. When $a_k > 1$, the item separates students more sharply.
+When $a_k < 1$, the item is less discriminating. When $a_k = 1$, this reduces to Rasch.
 
-### Three-Parameter Logistic Model (3PL)
-
-Adds a **guessing** parameter $c_k$ representing the probability of a correct response by pure chance. This is most relevant for multiple-choice items.
+### 3PL Model
 
 $$P(Y_{jk} = 1) = c_k + (1 - c_k) \cdot \text{logistic}(a_k \cdot (\alpha_j + \delta - \beta_k))$$
 
-For a 4-option multiple choice item, you might expect $c_k \approx 0.25$. The 3PL requires large samples (500+ students) because the guessing parameter is difficult to estimate.
+Adds guessing $c_k$. Even very low-ability students have probability $c_k$ of getting
+the item right. For 4-option multiple choice, expect $c_k \approx 0.25$.
 
-### Comparing the Three Models
+### Model Comparison
 
-| Feature                   | Rasch      | 2PL        | 3PL       |
-|---------------------------|------------|------------|-----------|
-| Item difficulty ($\beta$) | Yes        | Yes        | Yes       |
-| Item discrimination ($a$) | Fixed at 1 | Estimated  | Estimated |
-| Guessing ($c$)            | Fixed at 0 | Fixed at 0 | Estimated |
-| Parameters per item       | 1          | 2          | 3         |
-| Minimum sample size       | \~100      | \~200      | \~500     |
+| Feature | Rasch | 2PL | 3PL |
+|---------|-------|-----|-----|
+| Difficulty ($\beta$) | Yes | Yes | Yes |
+| Discrimination ($a$) | Fixed at 1 | Estimated | Estimated |
+| Guessing ($c$) | Fixed at 0 | Fixed at 0 | Estimated |
+| Parameters per item | 1 | 2 | 3 |
+| Minimum sample size | ~100 | ~200 | ~500 |
 
-### Priors
+## Prior Distributions
 
-All models use the following priors:
+All priors are user-configurable. Here are the defaults:
 
-| Parameter | Prior | Rationale |
-|---------------------------|------------------|---------------------------|
-| $\alpha_j$ (ability deviation) | Normal(0, 1) | Most students within 3 units of the mean |
-| $\beta_k$ (difficulty) | Normal(0, 1) | Most items between -3 and +3 logits |
-| $\delta$ (mean ability) | Normal(0.75, 1) | Slight expectation that students are above average difficulty |
-| $a_k$ (discrimination) | LogNormal(0, 0.5) | Always positive, centered around 1.0 |
-| $c_k$ (guessing) | Beta(5, 23) | Centered around 0.18, appropriate for multiple-choice items |
+| Parameter | Default Prior | R Argument | 95% Range |
+|-----------|-------------|------------|-----------|
+| $\delta$ (mean ability) | Normal(0.75, 1) | `prior_delta = c(0.75, 1)` | -1.25 to 2.75 |
+| $\alpha_j$ (ability deviation) | Normal(0, 1) | `prior_alpha_sd = 1` | -2.0 to 2.0 |
+| $\beta_k$ (difficulty) | Normal(0, 1) | `prior_beta_sd = 1` | -2.0 to 2.0 |
+| $a_k$ (discrimination) | LogNormal(0, 0.5) | `prior_a = c(0, 0.5)` | 0.37 to 2.72 |
+| $c_k$ (guessing) | Beta(5, 23) | `prior_c = c(5, 23)` | 0.05 to 0.35 |
 
-## Quick Start: Simulated Data
+These defaults follow the recommendations of the Stan User's Guide (Stan Development
+Team, 2024), Luo and Jiao (2018), and the edstan package (Furr, 2017). The ability
+prior also serves to identify the scale of the model.
+
+### Customizing Priors
+
+You can override any prior. For example:
+
+```{r}
+# Wider priors (let data dominate more)
+fit <- rasch_fit(data,
+  prior_delta    = c(0, 2),
+  prior_alpha_sd = 2,
+  prior_beta_sd  = 2,
+  seed = 123
+)
+
+# 4-option multiple choice (higher guessing)
+fit3 <- threepl_fit(data,
+  prior_c = c(5, 15),    # Beta(5,15), mean = 0.25
+  seed = 123
+)
+
+# Free-response items (low guessing)
+fit3 <- threepl_fit(data,
+  prior_c = c(1, 19),    # Beta(1,19), mean = 0.05
+  seed = 123
+)
+```
+
+
+
+## Quick Start with Simulated Data
 
 ### Simulate Data
 
-The `rasch_simulate()` function generates fake data with known true parameters. This lets you verify the model recovers the correct values.
+`rasch_simulate()` generates data with known true parameters so you can verify
+the model recovers the correct values.
 
 ```{r}
+library(birt)
+
 sim <- rasch_simulate(
-  J = 300,          # 300 students
-  K = 10,           # 10 items
-  delta_true = 0.75,# mean ability
-  alpha_sd = 1,     # spread of student abilities
-  seed = 42         # reproducible
+  J = 300,            # 300 students
+  K = 10,             # 10 items
+  delta_true = 0.75,  # mean ability
+  alpha_sd = 1,       # spread of abilities
+  seed = 42           # reproducible
 )
 
-# The response matrix: rows = students, columns = items
+# The response matrix
 head(sim$data)
 
-# True item difficulties (what we're trying to recover)
-sim$beta
-
-# True mean ability
-sim$delta
+# True values we want to recover
+sim$beta    # item difficulties
+sim$delta   # mean ability
 ```
 
 ### Fit the Rasch Model
 
 ```{r}
 fit <- rasch_fit(
-  data = sim$data,      # the response matrix
-  chains = 4,           # 4 independent MCMC chains
-  parallel_chains = 4,  # run all 4 at once
-  iter_sampling = 1000, # 1000 draws per chain = 4000 total
-  seed = 123            # reproducible
+  data = sim$data,
+  chains = 4,
+  parallel_chains = 4,
+  iter_sampling = 1000,
+  seed = 123
 )
 
 # Quick overview
@@ -159,81 +187,81 @@ summary(fit)
 
 ### Understanding the Output
 
-The `summary()` output has four sections:
+The `summary()` output contains:
 
-1.  **Mean Ability (delta)**: The estimated overall mean ability with a credible interval.
+**Mean Ability (delta)**: The estimated overall mean ability with a credible
+interval. Compare to `sim$delta` to check recovery.
 
-2.  **Item Difficulties (beta)**: One row per item showing the estimated difficulty, uncertainty (sd), 95% credible interval, and convergence diagnostics (Rhat, ESS).
+**Item Difficulties (beta)**: One row per item. The `mean` column is the point
+estimate. The `q_lower` and `q_upper` columns give the 95% credible interval.
 
-3.  **Person Ability Summary**: A quick overview of the distribution of estimated abilities across all students.
-
-4.  **Convergence Diagnostics**:
-
-    -   **Rhat** should be below 1.01 for all parameters. Values above 1.01 indicate the chains haven't converged — try running longer.
-    -   **ESS (bulk)** should be above 400. This is the effective number of independent samples. Low ESS means the estimates are noisy.
+**Convergence Diagnostics**: For every parameter, check that Rhat < 1.01 and
+ESS > 400. Rhat measures whether chains agree. ESS measures the effective number
+of independent samples.
 
 ### Extract Parameters
 
 ```{r}
-# Item difficulties — one row per item
+# Item difficulties
 item_params(fit)
 
-# Person abilities — one row per student
-# Shows total ability (alpha + delta)
+# Person abilities (total: alpha + delta)
 head(person_params(fit), 10)
 
-# Mean ability (delta) — a single number
+# Mean ability
 delta_param(fit)
 
-# Change the credible interval width
+# Change credible interval width
 item_params(fit, prob = 0.90)  # 90% interval
 item_params(fit, prob = 0.99)  # 99% interval
 ```
 
-### Model Diagnostics
+### Check the Priors Used
 
-#### Item Fit
+```{r}
+fit$priors
+```
 
-Outfit and infit are mean-square statistics that measure how well each item conforms to the model. Both should be near 1.0.
+### Item Fit Diagnostics
+
+Outfit and infit are mean-square statistics measuring how well each item
+conforms to the model. Both should be near 1.0.
 
 ```{r}
 ifit <- item_fit(fit)
 ifit
 
-# Flag potentially misfitting items
+# Flag misfitting items
 ifit[ifit$outfit > 1.3 | ifit$outfit < 0.7, ]
 ```
 
--   **Outfit \> 1.3**: More variation than expected. The item behaves erratically — students who should get it right sometimes get it wrong, and vice versa.
--   **Outfit \< 0.7**: Less variation than expected. The item is too predictable — it might be redundant with other items.
--   **Infit**: Same interpretation, but more sensitive to systematic patterns near the item's difficulty level and less sensitive to outliers.
+Interpretation:
 
-#### Person Fit
+- Outfit > 1.3: The item behaves erratically — unexpected responses for
+  students far from the item's difficulty.
+- Outfit < 0.7: The item is too predictable — possibly redundant.
+- Infit: Same idea but more sensitive to patterns near the item's difficulty.
 
-Same idea, but per student. Identifies unusual response patterns.
+### Person Fit Diagnostics
 
 ```{r}
 pfit <- person_fit(fit)
 head(pfit)
 
-# Flag potentially misfitting students
+# Unusual response patterns
 pfit[pfit$outfit > 1.3, ]
 ```
 
-High person outfit might indicate:
-
--   Guessing (getting hard items right by luck)
--   Careless responding (getting easy items wrong)
--   Cheating or answer copying
+High person outfit may indicate guessing, careless responding, or cheating.
 
 ### Plots
 
-#### Item Characteristic Curves (ICCs)
+#### Item Characteristic Curves
 
-Each curve shows the probability of a correct response as a function of ability. Harder items have curves shifted to the right. The shaded bands show 95% credible intervals.
+Each curve shows P(correct) as a function of ability. Harder items are shifted right.
+Shaded bands show 95% credible intervals.
 
 ```{r}
-# All items
 plot(fit, type = "icc")
 
 # Specific items only
@@ -245,11 +273,8 @@ plot_icc(fit, ci = FALSE)
 
 #### Wright Map
 
-The Wright map places students (blue histogram) and items (red triangles) on the same logit scale. This is essential for evaluating test targeting:
-
--   If items are clustered where students are, the test measures well.
--   If items are all to the left of the students, the test is too easy.
--   If there are gaps with no items, the test doesn't measure well in that ability range.
+Places students (histogram) and items (triangles) on the same logit scale.
+Good tests have items covering the range where students are.
 
 ```{r}
 plot(fit, type = "wright")
@@ -257,19 +282,20 @@ plot(fit, type = "wright")
 
 #### Test Information Function
 
-The information function shows where on the ability scale the test is most precise. Higher information means more precise measurement. In the Rasch model, each item contributes maximum information at its difficulty level.
+Shows where on the ability scale the test is most precise. Higher information
+means more precise measurement.
 
 ```{r}
-# Test information (total across all items)
+# Total test information
 plot(fit, type = "info")
 
-# With individual item information curves overlaid
+# With individual item curves
 plot_info(fit, show_items = TRUE)
 ```
 
 #### Trace Plots
 
-Trace plots show the MCMC chains' paths through parameter space. Good chains look like "fuzzy caterpillars" — they overlap and mix well. If chains are stuck in different places or trending, the model hasn't converged.
+Check MCMC convergence. Chains should overlap and look like "fuzzy caterpillars."
 
 ```{r}
 plot(fit, type = "trace")
@@ -277,75 +303,76 @@ plot(fit, type = "trace")
 
 ### Parameter Recovery
 
-When using simulated data, you can check how well the model recovers the true parameters:
+With simulated data, verify the model recovers the truth:
 
 ```{r}
-# Compare estimated vs. true item difficulties
 items_est <- item_params(fit)
 
+# Plot true vs estimated
 plot(sim$beta, items_est$mean,
      xlab = "True Difficulty",
      ylab = "Estimated Difficulty",
-     pch = 19,
-     main = "Parameter Recovery: Item Difficulties")
+     pch = 19, main = "Parameter Recovery")
 abline(0, 1, col = "red", lty = 2)
 
-# Correlation (should be > 0.95 with 300 students)
+# Correlation (should be > 0.95)
 cor(sim$beta, items_est$mean)
 
-# Compare delta
+# Delta recovery
 cat("True delta:", sim$delta, "\n")
 cat("Estimated delta:", delta_param(fit)$mean, "\n")
-
-# Compare person abilities
-persons_est <- person_params(fit)
-true_theta <- sim$alpha + sim$delta
-cor(true_theta, persons_est$mean)
 ```
 
 ## Fitting the 2PL Model
 
-The 2PL model allows each item to have its own discrimination. Use it when you suspect items differ in how well they distinguish between high- and low-ability students.
+Use the 2PL when you suspect items differ in discrimination.
 
 ```{r}
 fit2 <- twopl_fit(sim$data, seed = 123)
-fit2
 summary(fit2)
 ```
 
 ### Discrimination Parameters
 
 ```{r}
-# Extract discrimination estimates
 discrim_params(fit2)
 ```
 
 Interpretation:
 
--   $a \approx 1$: Similar to Rasch — average discrimination.
--   $a > 1.5$: Highly discriminating — the item sharply separates students.
--   $a < 0.5$: Poorly discriminating — the item barely tells high-ability from low-ability students. Consider removing it.
+- $a \approx 1$: Similar to Rasch.
+- $a > 1.5$: Highly discriminating — steep ICC.
+- $a < 0.5$: Poorly discriminating — consider removing.
 
-### 2PL ICCs
+### 2PL Plots
 
-Notice how the curves now have different slopes. Steeper curves correspond to higher discrimination.
+Notice the different slopes in the ICCs:
 
 ```{r}
 plot(fit2, type = "icc")
+plot(fit2, type = "info")
+```
+
+### Custom Priors for 2PL
+
+```{r}
+fit2_wide <- twopl_fit(sim$data,
+  prior_a = c(0, 1),         # wider discrimination prior
+  prior_delta = c(0, 2),     # less informative on mean
+  seed = 123
+)
+fit2_wide$priors
 ```
 
 ## Fitting the 3PL Model
 
-The 3PL adds guessing. Use it for multiple-choice tests where low-ability students can guess correctly.
-
-**Important**: The 3PL needs large samples (500+ students). With fewer students, the guessing parameter is poorly identified and you may see convergence issues.
+Use the 3PL for multiple-choice tests where guessing is plausible.
+Requires 500+ students.
 
 ```{r}
-# Simulate a larger dataset for the 3PL
 sim_large <- rasch_simulate(J = 500, K = 10, seed = 42)
 
 fit3 <- threepl_fit(sim_large$data, seed = 123)
-fit3
 summary(fit3)
 ```
 
@@ -357,13 +384,29 @@ guessing_params(fit3)
 
 Interpretation:
 
--   $c \approx 0.25$: Consistent with 4-option multiple choice (1 in 4 chance of guessing correctly).
--   $c \approx 0.0$: No guessing — expected for free-response items.
--   $c > 0.35$: Unusually high guessing — the item may have poor distractors.
+- $c \approx 0.25$: Typical for 4-option MC.
+- $c \approx 0$: No guessing (expected for free-response).
+- $c > 0.35$: Unusually high — poor distractors.
 
-### 3PL ICCs
+### 3PL with Item-Type-Specific Priors
 
-Notice the lower asymptote — the probability never reaches zero, even for very low ability.
+```{r}
+# 4-option multiple choice items
+fit3_mc4 <- threepl_fit(sim_large$data,
+  prior_c = c(5, 15),   # Beta(5,15), mean = 0.25
+  seed = 123
+)
+
+# 5-option multiple choice items
+fit3_mc5 <- threepl_fit(sim_large$data,
+  prior_c = c(5, 20),   # Beta(5,20), mean = 0.20
+  seed = 123
+)
+```
+
+### 3PL Plots
+
+Notice the lower asymptote; P(correct) never reaches zero:
 
 ```{r}
 plot(fit3, type = "icc")
@@ -373,108 +416,167 @@ plot(fit3, type = "icc")
 
 ### The Algebra Dataset
 
-birt includes an example dataset of 1,382 students on a 12-item algebra test.
+`birt` includes 1,382 students on a 12-item algebra test.
 
 ```{r}
 data(algebra)
-dim(algebra)       # 1382 students, 12 items
-head(algebra)
-colMeans(algebra)  # proportion correct per item
+dim(algebra)
+colMeans(algebra, na.rm = TRUE)
 ```
 
 ### Fit and Explore
 
 ```{r}
-# Fit a Rasch model
 fit_alg <- rasch_fit(algebra, seed = 123)
 summary(fit_alg)
 
-# Which items are hardest?
+# Hardest items
 items <- item_params(fit_alg)
 items[order(items$mean, decreasing = TRUE), ]
 
-# Item fit — any misfitting items?
-ifit <- item_fit(fit_alg)
-ifit
+# Item fit
+item_fit(fit_alg)
 
-# Visualize
+# Plots
 plot(fit_alg, type = "icc")
 plot(fit_alg, type = "wright")
 plot(fit_alg, type = "info")
 ```
 
-### Using Your Own Data
-
-Your data should be a matrix or data frame with:
-
--   **Rows** = students (or examinees, respondents, etc.)
--   **Columns** = items (questions, tasks, etc.)
--   **Values** = 0 (incorrect) or 1 (correct)
--   **NA** = missing responses (handled automatically)
+### Compare Rasch vs 2PL on Real Data
 
 ```{r}
-# From a CSV file
+fit_alg_2pl <- twopl_fit(algebra, seed = 123)
+
+# Are discriminations similar (Rasch-like) or very different?
+discrim_params(fit_alg_2pl)
+
+# Compare ICCs — different slopes suggest 2PL is better
+plot(fit_alg, type = "icc")      # Rasch: parallel curves
+plot(fit_alg_2pl, type = "icc")  # 2PL: varying slopes
+```
+
+### Using Your Own Data
+
+Your data should be a matrix or data frame:
+
+- Rows = students
+- Columns = items
+- Values = 0 (incorrect) or 1 (correct)
+- NA = missing (handled automatically)
+
+```{r}
 my_data <- read.csv("my_test_data.csv", row.names = 1)
 my_data <- as.matrix(my_data)
 
-# Check it's formatted correctly
-dim(my_data)        # (n_students, n_items)
-table(my_data)      # should show only 0s and 1s
-sum(is.na(my_data)) # count missing values
+# Verify format
+dim(my_data)
+table(my_data, useNA = "ifany")
 
 # Fit
 fit_mine <- rasch_fit(my_data, seed = 123)
 summary(fit_mine)
 ```
 
-## Accessing the CmdStan Fit Object
+## Sensitivity Analysis
 
-For advanced analyses, you can access the underlying CmdStanMCMC object directly:
+Re-fit the model with different priors. If estimates barely change, your
+conclusions are data-driven.
 
 ```{r}
-# The raw CmdStan fit is stored in fit$fit
+# Default priors
+fit_default <- rasch_fit(algebra, seed = 123)
+
+# Wider priors
+fit_wide <- rasch_fit(algebra,
+  prior_delta = c(0, 2),
+  prior_alpha_sd = 2,
+  prior_beta_sd = 2,
+  seed = 123
+)
+
+# Centered at zero (no assumption on mean ability)
+fit_zero <- rasch_fit(algebra,
+  prior_delta = c(0, 1),
+  seed = 123
+)
+
+# Compare item difficulty estimates across prior choices
+items_default <- item_params(fit_default)
+items_wide    <- item_params(fit_wide)
+items_zero    <- item_params(fit_zero)
+
+# Correlations (> 0.99 indicates robustness)
+cor(items_default$mean, items_wide$mean)
+cor(items_default$mean, items_zero$mean)
+
+# Visual comparison
+plot(items_default$mean, items_wide$mean,
+     xlab = "Default Priors", ylab = "Wide Priors",
+     pch = 19, main = "Prior Sensitivity")
+abline(0, 1, col = "red", lty = 2)
+```
+
+## Advanced Usage
+
+### Accessing the Raw CmdStan Object
+
+```{r}
+# The CmdStanMCMC object
 class(fit$fit)
 
-# LOO cross-validation (requires the loo package)
-# install.packages("loo")
-# Note: requires log_lik in generated quantities (not yet in birt's Stan models)
-
-# Extract raw draws for custom analyses
+# Raw draws for custom analysis
 draws <- fit$fit$draws(variables = "beta", format = "draws_matrix")
-dim(draws)  # (n_draws, n_items)
+dim(draws)
 
-# Save a fitted model to disk
-fit$fit$save_object("my_rasch_fit.rds")
+# Save a fitted model
+fit$fit$save_object("my_fit.rds")
 
 # Load it back
-# saved_fit <- readRDS("my_rasch_fit.rds")
+# saved <- readRDS("my_fit.rds")
+```
+
+### Controlling MCMC Sampling
+
+```{r}
+# More iterations for better estimates
+fit <- rasch_fit(data, iter_sampling = 2000, seed = 123)
+
+# Fix divergent transitions
+fit <- rasch_fit(data, adapt_delta = 0.95, seed = 123)
+
+# Fewer chains for speed (not recommended for final analysis)
+fit <- rasch_fit(data, chains = 2, parallel_chains = 2, seed = 123)
 ```
 
 ## Choosing a Model
 
-A practical guide to choosing between the three models:
+1. **Start with Rasch.** Simplest and most interpretable. If item fit statistics
+   are acceptable (0.7–1.3), stop here.
 
-1.  **Start with Rasch**. It's the simplest and most interpretable. If items fit well (outfit/infit between 0.7 and 1.3), stick with it.
+2. **Try 2PL** if Rasch fit is poor or you have theoretical reasons to expect
+   varying discrimination. Compare ICCs — if slopes differ meaningfully,
+   the 2PL captures real differences.
 
-2.  **Try 2PL** if Rasch item fit is poor or if you have theoretical reasons to believe items differ in discrimination. Compare the ICC plots — if 2PL curves have very different slopes, the discrimination parameter is meaningful.
-
-3.  **Try 3PL** only if you have multiple-choice items and 500+ students. If the estimated guessing parameters are all near zero, drop back to 2PL.
+3. **Try 3PL** only with multiple-choice items, 500+ students, and clear
+   evidence of guessing. If estimated guessing parameters are near zero,
+   the 2PL is sufficient.
 
 ## Troubleshooting
 
 ### Divergent Transitions
 
-If you see "X divergent transitions", the sampler had trouble exploring the posterior. Try:
+The sampler had trouble exploring the posterior. Try:
 
 ```{r}
 fit <- rasch_fit(data, adapt_delta = 0.95, seed = 123)
 ```
 
-The `adapt_delta` argument (passed through `...` to CmdStan) makes the sampler take smaller steps. Values between 0.9 and 0.99 usually help.
+Values between 0.9 and 0.99 usually help.
 
 ### Low ESS
 
-If ESS values are below 400, try more iterations:
+Not enough effective samples. Try more iterations:
 
 ```{r}
 fit <- rasch_fit(data, iter_sampling = 2000, seed = 123)
@@ -482,4 +584,18 @@ fit <- rasch_fit(data, iter_sampling = 2000, seed = 123)
 
 ### Slow Compilation
 
-The Stan model compiles to C++ the first time you run it. This takes 30-60 seconds but is cached afterward. Subsequent calls to the same model are fast.
+The Stan model compiles to C++ on first use (~30–60 seconds). It is
+cached afterward, so subsequent calls are fast.
+
+
+## References
+
+- Luo, Y., & Jiao, H. (2018). Using the Stan program for Bayesian item
+  response theory. *Educational and Psychological Measurement, 78*(3), 384–408.
+- Stan Development Team (2024). *Stan User's Guide*, §1.11: Item-Response
+  Theory Models.
+- Gelman, A., Jakulin, A., Pittau, M. G., & Su, Y. S. (2008). A weakly
+  informative default prior distribution for logistic and other regression
+  models. *Annals of Applied Statistics, 2*(4), 1360–1383.
+- Culpepper, S. A. (2016). Revisiting the 4-parameter item response model:
+  Bayesian estimation and application. *Psychometrika, 81*(4), 1142–1163.
