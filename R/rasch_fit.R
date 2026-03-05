@@ -39,9 +39,9 @@
 #'
 #' @export
 rasch_fit <- function(data,
-                      prior_delta = c(0.75, 1),
-                      prior_alpha_sd = 1,
-                      prior_beta_sd = 1,
+                      prior_delta = c(0, 1),
+                      prior_alpha_sd = 1.5,
+                      prior_beta_sd = 1.5,
                       chains = 4,
                       parallel_chains = 4,
                       iter_warmup = 1000,

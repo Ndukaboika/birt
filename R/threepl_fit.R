@@ -42,11 +42,11 @@
 #'
 #' @export
 threepl_fit <- function(data,
-                        prior_delta = c(0.75, 1),
-                        prior_alpha_sd = 1,
-                        prior_beta_sd = 1,
+                        prior_delta = c(0, 1),
+                        prior_alpha_sd = 1.5,
+                        prior_beta_sd = 1.5,
                         prior_a = c(0, 0.5),
-                        prior_c = c(5, 23),
+                        prior_c = c(2, 8),
                         chains = 4,
                         parallel_chains = 4,
                         iter_warmup = 1000,
