@@ -97,13 +97,11 @@ rasch_fit <- function(data,
   )
 
   # --- Compile ---
-  stan_file <- system.file("stan", "rasch.stan", package = "birt")
-  if (stan_file == "") {
-    cli::cli_abort("Stan model file not found. Is {.pkg birt} installed correctly?")
-  }
-
-  cli::cli_inform("Compiling Rasch model...")
-  mod <- cmdstanr::cmdstan_model(stan_file)
+  # NEW — uses pre-compiled model (no compilation delay)
+  mod <- instantiate::stan_package_model(
+    name = "rasch",
+    package = "birt"
+  )
 
   # --- Sample ---
   cli::cli_inform("Sampling ({chains} chains x {iter_sampling} iterations)...")

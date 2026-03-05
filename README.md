@@ -1,4 +1,4 @@
-# birt <img src="man/figures/logo.png" align="right" height="139" alt="" />
+# birt
 
 <!-- badges: start -->
 <!-- badges: end -->

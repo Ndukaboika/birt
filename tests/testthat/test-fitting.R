@@ -1,8 +1,8 @@
 # These tests actually run Stan — skip if CmdStan is not installed
-skip_if_not_installed("cmdstanr")
+skip_if_not_installed("instantiate")
 skip_if_not(
-  tryCatch({cmdstanr::cmdstan_version(); TRUE}, error = function(e) FALSE),
-  message = "CmdStan not installed"
+  tryCatch({instantiate::stan_package_model(); TRUE}, error = function(e) FALSE),
+  message = "instatiate not installed"
 )
 
 test_that("rasch_fit runs on simulated data", {
@@ -15,9 +15,9 @@ test_that("rasch_fit runs on simulated data", {
   expect_equal(fit$model, "Rasch")
 
   # Check priors are stored
-  expect_equal(fit$priors$delta, c(0.75, 1))
-  expect_equal(fit$priors$alpha_sd, 1)
-  expect_equal(fit$priors$beta_sd, 1)
+  expect_equal(fit$priors$delta, c(0, 1))
+  expect_equal(fit$priors$alpha_sd, 1.5)
+  expect_equal(fit$priors$beta_sd, 1.5)
 })
 
 test_that("rasch_fit works with custom priors", {

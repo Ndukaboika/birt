@@ -6,3 +6,6 @@
 ^birt\.Rproj$
 ^\.Rproj\.user$
 ^inst/stan/[^.]*$
+^src/stan/\.*[^\.stan]$$
+^_pkgdown\.yml$
+^docs$

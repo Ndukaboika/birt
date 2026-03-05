@@ -21,6 +21,7 @@ Imports:
     cli,
     cmdstanr,
     ggplot2,
+    instantiate,
     posterior,
     rlang
 Suggests: 
@@ -31,3 +32,4 @@ Additional_repositories: https://stan-dev.r-universe.dev/
 Config/testthat/edition: 3
 LazyData: true
 VignetteBuilder: knitr
+SystemRequirements: CmdStan (>= 2.26), C++17
