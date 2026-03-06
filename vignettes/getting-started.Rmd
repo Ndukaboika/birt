@@ -132,22 +132,16 @@ more informative values.
 | $a_k$ (discrimination) | LogNormal(0, 0.5) | `prior_a = c(0, 0.5)` | 0.37 to 2.72 |
 | $c_k$ (guessing) | Beta(2, 8) | `prior_c = c(2, 8)` | 0.03 to 0.45 |
 
-These defaults are informed by recommendations from the Stan User's Guide (Stan
-Development Team, 2024), Luo and Jiao (2018), and the edstan package (Furr, 2017).
+These defaults are informed by recommendations from the Stan User's Guide (Stan Development Team, 2024), Luo and Jiao (2018), and the edstan package (Furr, 2017).
 The ability prior also serves to identify the scale of the model.
 
 ### Why These Defaults?
 
-- **delta ~ Normal(0, 1)**: Centered at zero — no assumption about whether students
-  are above or below average difficulty. The data determines this.
-- **alpha ~ Normal(0, 1.5)**: Wide enough to accommodate very strong and very weak
-  students. A deviation of 3 logits shifts P(correct) from 50% to about 95%.
-- **beta ~ Normal(0, 1.5)**: Same rationale. Covers the typical difficulty range of
-  well-constructed test items.
-- **a ~ LogNormal(0, 0.5)**: Always positive (negative discrimination contradicts IRT
-  assumptions), centered at 1.0 (the Rasch case).
-- **c ~ Beta(2, 8)**: Weakly informative with a mean around 0.2. Wide enough to
-  accommodate different item formats without making strong assumptions.
+- **delta ~ Normal(0, 1)**: Centered at zero — no assumption about whether students are above or below average difficulty. The data determines this.
+- **alpha ~ Normal(0, 1.5)**: Wide enough to accommodate very strong and very weak students. A deviation of 3 logits shifts P(correct) from 50% to about 95%.
+- **beta ~ Normal(0, 1.5)**: Same rationale. Covers the typical difficulty range of well-constructed test items.
+- **a ~ LogNormal(0, 0.5)**: Always positive (negative discrimination contradicts IRT assumptions), centered at 1.0 (the Rasch case).
+- **c ~ Beta(2, 8)**: Weakly informative with a mean around 0.2. Wide enough to accommodate different item formats without making strong assumptions.
 
 ### Customizing Priors
 
