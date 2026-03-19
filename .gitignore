@@ -1,8 +1,5 @@
-.Rproj.user
+*.Rproj
+.Rproj.user/
 .Rhistory
 .RData
-.httr-oauth
 .DS_Store
-.quarto
-.rjags.out
-inst/doc
