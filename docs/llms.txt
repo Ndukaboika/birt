@@ -11,23 +11,6 @@ pre-compiled during package installation using the
 [instantiate](https://wlandau.github.io/instantiate/) package, so there
 is no compilation delay at runtime.
 
-## Features
-
-- **Three models**: Rasch (1PL), 2PL, and 3PL for dichotomous response
-  data
-- **Full Bayesian inference**: Credible intervals and posterior
-  distributions via Hamiltonian Monte Carlo
-- **User-configurable priors**: Weakly informative defaults that work
-  out of the box, with class-level and per-item control for users who
-  want informative priors
-- **Built-in diagnostics**: Outfit/infit statistics, convergence checks
-  (Rhat, ESS), and posterior predictive checks
-- **Publication-ready plots**: Item characteristic curves (with credible
-  bands), Wright maps, and test information functions
-- **Missing data**: Handled automatically — no imputation needed
-- **Real data included**: Algebra test dataset (1,382 students, 12
-  items) for practice and demonstration
-
 ## Supported Models
 
 | Model | Function | Item Parameters | Minimum N |
