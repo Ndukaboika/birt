@@ -52,37 +52,72 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="birt-">birt <img src="reference/figures/logo.png" align="right" height="139" alt=""><a class="anchor" aria-label="anchor" href="#birt-"></a>
+<div class="page-header"><h1 id="birt">birt<a class="anchor" aria-label="anchor" href="#birt"></a>
 </h1></div>
+<blockquote>
+<p>Bayesian Item Response Theory models in R, powered by Stan.</p>
+</blockquote>
 <!-- badges: start -->
 <!-- badges: end -->
-<p><strong>birt</strong> (Bayesian IRT) fits Item Response Theory models using Bayesian estimation via <a href="https://mc-stan.org/users/interfaces/cmdstan" class="external-link">CmdStan</a>. Stan models are pre-compiled during package installation using the <a href="https://wlandau.github.io/instantiate/" class="external-link">instantiate</a> package, so there is no compilation delay at runtime.</p>
-<p>Supported models:</p>
+<p><strong>birt</strong> (Bayesian IRT) fits Item Response Theory models using full Bayesian estimation via <a href="https://mc-stan.org/users/interfaces/cmdstan" class="external-link">CmdStan</a>. It gives you posterior distributions, credible intervals, and convergence diagnostics for every parameter — not just point estimates. Stan models are pre-compiled during package installation using the <a href="https://wlandau.github.io/instantiate/" class="external-link">instantiate</a> package, so there is no compilation delay at runtime.</p>
+<div class="section level2">
+<h2 id="features">Features<a class="anchor" aria-label="anchor" href="#features"></a>
+</h2>
+<ul>
+<li>
+<strong>Three models</strong>: Rasch (1PL), 2PL, and 3PL for dichotomous response data</li>
+<li>
+<strong>Full Bayesian inference</strong>: Credible intervals and posterior distributions via Hamiltonian Monte Carlo</li>
+<li>
+<strong>User-configurable priors</strong>: Weakly informative defaults that work out of the box, with class-level and per-item control for users who want informative priors</li>
+<li>
+<strong>Built-in diagnostics</strong>: Outfit/infit statistics, convergence checks (Rhat, ESS), and posterior predictive checks</li>
+<li>
+<strong>Publication-ready plots</strong>: Item characteristic curves (with credible bands), Wright maps, and test information functions</li>
+<li>
+<strong>Missing data</strong>: Handled automatically — no imputation needed</li>
+<li>
+<strong>Real data included</strong>: Algebra test dataset (1,382 students, 12 items) for practice and demonstration</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="supported-models">Supported Models<a class="anchor" aria-label="anchor" href="#supported-models"></a>
+</h2>
 <table class="table">
+<colgroup>
+<col width="15%">
+<col width="22%">
+<col width="37%">
+<col width="24%">
+</colgroup>
 <thead><tr>
 <th>Model</th>
 <th>Function</th>
 <th>Item Parameters</th>
+<th>Minimum N</th>
 </tr></thead>
 <tbody>
 <tr>
 <td>Rasch (1PL)</td>
 <td><code><a href="reference/rasch_fit.html">rasch_fit()</a></code></td>
 <td>difficulty</td>
+<td>~100</td>
 </tr>
 <tr>
 <td>2PL</td>
 <td><code><a href="reference/twopl_fit.html">twopl_fit()</a></code></td>
 <td>difficulty + discrimination</td>
+<td>~200</td>
 </tr>
 <tr>
 <td>3PL</td>
 <td><code><a href="reference/threepl_fit.html">threepl_fit()</a></code></td>
 <td>difficulty + discrimination + guessing</td>
+<td>~500</td>
 </tr>
 </tbody>
 </table>
-<p>All priors are user-configurable. Sensible defaults are provided based on the Stan User’s Guide.</p>
+</div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
 </h2>
@@ -93,7 +128,7 @@
 <span>  <span class="fu"><a href="https://rdrr.io/r/base/options.html" class="external-link">getOption</a></span><span class="op">(</span><span class="st">"repos"</span><span class="op">)</span></span>
 <span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Install CmdStan</span></span>
+<span><span class="co"># 2. Install CmdStan (~5 minutes, one-time setup)</span></span>
 <span><span class="fu">cmdstanr</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/cmdstanr/reference/install_cmdstan.html" class="external-link">install_cmdstan</a></span><span class="op">(</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># 3. Install birt (from source to trigger Stan compilation)</span></span>
@@ -105,60 +140,196 @@
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ndukaboika/birt" class="external-link">birt</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Simulate data</span></span>
+<span><span class="co"># Simulate test data: 300 students, 10 items</span></span>
 <span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rasch_simulate.html">rasch_simulate</a></span><span class="op">(</span>J <span class="op">=</span> <span class="fl">300</span>, K <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Fit a Rasch model</span></span>
 <span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rasch_fit.html">rasch_fit</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">data</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
-<span><span class="va">fit</span></span>
+<span></span>
+<span><span class="co"># View results</span></span>
 <span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Extract parameters</span></span>
-<span><span class="fu"><a href="reference/item_params.html">item_params</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="fu"><a href="reference/delta_param.html">delta_param</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># Plots</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"icc"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"wright"</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"info"</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/item_params.html">item_params</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>       <span class="co"># item difficulties with credible intervals</span></span>
+<span><span class="fu"><a href="reference/person_params.html">person_params</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>     <span class="co"># student abilities</span></span>
+<span><span class="fu"><a href="reference/delta_param.html">delta_param</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>       <span class="co"># overall mean ability</span></span>
 <span></span>
 <span><span class="co"># Diagnostics</span></span>
-<span><span class="fu"><a href="reference/item_fit.html">item_fit</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="reference/item_fit.html">item_fit</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span>          <span class="co"># outfit and infit statistics</span></span>
+<span></span>
+<span><span class="co"># Plots</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"icc"</span><span class="op">)</span>     <span class="co"># Item Characteristic Curves</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"wright"</span><span class="op">)</span>  <span class="co"># Wright Map</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"info"</span><span class="op">)</span>    <span class="co"># Test Information Function</span></span></code></pre></div>
+<div class="section level3">
+<h3 id="fitting-a-2pl-model">Fitting a 2PL Model<a class="anchor" aria-label="anchor" href="#fitting-a-2pl-model"></a>
+</h3>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">fit2</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/twopl_fit.html">twopl_fit</a></span><span class="op">(</span><span class="va">sim</span><span class="op">$</span><span class="va">data</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/discrim_params.html">discrim_params</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span>     <span class="co"># item discrimination estimates</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit2</span>, type <span class="op">=</span> <span class="st">"icc"</span><span class="op">)</span> <span class="co"># ICCs with varying slopes</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="fitting-a-3pl-model">Fitting a 3PL Model<a class="anchor" aria-label="anchor" href="#fitting-a-3pl-model"></a>
+</h3>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">sim_large</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rasch_simulate.html">rasch_simulate</a></span><span class="op">(</span>J <span class="op">=</span> <span class="fl">500</span>, K <span class="op">=</span> <span class="fl">10</span>, seed <span class="op">=</span> <span class="fl">42</span><span class="op">)</span></span>
+<span><span class="va">fit3</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/threepl_fit.html">threepl_fit</a></span><span class="op">(</span><span class="va">sim_large</span><span class="op">$</span><span class="va">data</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/guessing_params.html">guessing_params</a></span><span class="op">(</span><span class="va">fit3</span><span class="op">)</span>    <span class="co"># guessing parameter estimates</span></span></code></pre></div>
+</div>
 </div>
 <div class="section level2">
 <h2 id="custom-priors">Custom Priors<a class="anchor" aria-label="anchor" href="#custom-priors"></a>
 </h2>
-<p>Every prior can be overridden:</p>
-<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rasch_fit.html">rasch_fit</a></span><span class="op">(</span><span class="va">data</span>,</span>
+<p>Default priors are weakly informative and work for most tests. Override them when you have domain knowledge.</p>
+<div class="section level3">
+<h3 id="class-level-priors">Class-Level Priors<a class="anchor" aria-label="anchor" href="#class-level-priors"></a>
+</h3>
+<p>Set the same prior for all items of a parameter type:</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Wider difficulty prior for all items</span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rasch_fit.html">rasch_fit</a></span><span class="op">(</span><span class="va">data</span>,</span>
 <span>  prior_delta    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>,       <span class="co"># Normal(0, 2) for mean ability</span></span>
 <span>  prior_alpha_sd <span class="op">=</span> <span class="fl">2</span>,             <span class="co"># Normal(0, 2) for ability deviations</span></span>
-<span>  prior_beta_sd  <span class="op">=</span> <span class="fl">2</span>,             <span class="co"># Normal(0, 2) for item difficulties</span></span>
+<span>  prior_beta     <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span>,       <span class="co"># Normal(0, 2) for all item difficulties</span></span>
 <span>  seed <span class="op">=</span> <span class="fl">123</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 3PL for 4-option multiple choice</span></span>
+<span><span class="co"># 4-option MC guessing for all items</span></span>
 <span><span class="va">fit3</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/threepl_fit.html">threepl_fit</a></span><span class="op">(</span><span class="va">data</span>,</span>
 <span>  prior_c <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">15</span><span class="op">)</span>,             <span class="co"># Beta(5, 15), mean = 0.25</span></span>
 <span>  seed <span class="op">=</span> <span class="fl">123</span></span>
 <span><span class="op">)</span></span></code></pre></div>
 </div>
+<div class="section level3">
+<h3 id="per-item-priors">Per-Item Priors<a class="anchor" aria-label="anchor" href="#per-item-priors"></a>
+</h3>
+<p>Set a different prior for each individual item:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">K</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">data</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Item 3 is known to be hard, item 7 is known to be easy</span></span>
+<span><span class="va">b_mean</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">0</span>, <span class="va">K</span><span class="op">)</span></span>
+<span><span class="va">b_mean</span><span class="op">[</span><span class="fl">3</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">2.0</span></span>
+<span><span class="va">b_mean</span><span class="op">[</span><span class="fl">7</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="op">-</span><span class="fl">1.5</span></span>
+<span></span>
+<span><span class="va">b_sd</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">1.5</span>, <span class="va">K</span><span class="op">)</span></span>
+<span><span class="va">b_sd</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">3</span>, <span class="fl">7</span><span class="op">)</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fl">0.5</span>    <span class="co"># tighter prior for items we know about</span></span>
+<span></span>
+<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rasch_fit.html">rasch_fit</a></span><span class="op">(</span><span class="va">data</span>,</span>
+<span>  prior_beta_mean <span class="op">=</span> <span class="va">b_mean</span>,</span>
+<span>  prior_beta_sd <span class="op">=</span> <span class="va">b_sd</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">123</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Mixed item formats: items 1-5 are 4-option MC, items 6-10 are 5-option MC</span></span>
+<span><span class="va">c_alpha</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">5</span>, <span class="fl">10</span><span class="op">)</span></span>
+<span><span class="va">c_beta</span>  <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">15</span>, <span class="fl">5</span><span class="op">)</span>, <span class="fu"><a href="https://rdrr.io/r/base/rep.html" class="external-link">rep</a></span><span class="op">(</span><span class="fl">20</span>, <span class="fl">5</span><span class="op">)</span><span class="op">)</span>   <span class="co"># mean 0.25 vs 0.20</span></span>
+<span></span>
+<span><span class="va">fit3</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/threepl_fit.html">threepl_fit</a></span><span class="op">(</span><span class="va">data</span>,</span>
+<span>  prior_c_alpha <span class="op">=</span> <span class="va">c_alpha</span>,</span>
+<span>  prior_c_beta <span class="op">=</span> <span class="va">c_beta</span>,</span>
+<span>  seed <span class="op">=</span> <span class="fl">123</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check what priors were used</span></span>
+<span><span class="va">fit</span><span class="op">$</span><span class="va">priors</span></span></code></pre></div>
+</div>
+<div class="section level3">
+<h3 id="default-prior-summary">Default Prior Summary<a class="anchor" aria-label="anchor" href="#default-prior-summary"></a>
+</h3>
+<table class="table">
+<colgroup>
+<col width="25%">
+<col width="20%">
+<col width="30%">
+<col width="23%">
+</colgroup>
+<thead><tr>
+<th>Parameter</th>
+<th>Default</th>
+<th>Class-level</th>
+<th>Per-item</th>
+</tr></thead>
+<tbody>
+<tr>
+<td>Mean ability (δ)</td>
+<td>Normal(0, 1)</td>
+<td><code>prior_delta = c(0, 1)</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Ability deviation (α)</td>
+<td>Normal(0, 1.5)</td>
+<td><code>prior_alpha_sd = 1.5</code></td>
+<td>—</td>
+</tr>
+<tr>
+<td>Item difficulty (β)</td>
+<td>Normal(0, 1.5)</td>
+<td><code>prior_beta = c(0, 1.5)</code></td>
+<td>
+<code>prior_beta_mean</code>, <code>prior_beta_sd</code>
+</td>
+</tr>
+<tr>
+<td>Discrimination (a)</td>
+<td>LogNormal(0, 0.5)</td>
+<td><code>prior_a = c(0, 0.5)</code></td>
+<td>
+<code>prior_a_meanlog</code>, <code>prior_a_sdlog</code>
+</td>
+</tr>
+<tr>
+<td>Guessing (c)</td>
+<td>Beta(2, 8)</td>
+<td><code>prior_c = c(2, 8)</code></td>
+<td>
+<code>prior_c_alpha</code>, <code>prior_c_beta</code>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 <div class="section level2">
 <h2 id="real-data">Real Data<a class="anchor" aria-label="anchor" href="#real-data"></a>
 </h2>
-<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/data.html" class="external-link">data</a></span><span class="op">(</span><span class="va">algebra</span><span class="op">)</span></span>
-<span><span class="va">fit</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rasch_fit.html">rasch_fit</a></span><span class="op">(</span><span class="va">algebra</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span>
-<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit</span>, type <span class="op">=</span> <span class="st">"wright"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="fu"><a href="https://rdrr.io/r/base/dim.html" class="external-link">dim</a></span><span class="op">(</span><span class="va">algebra</span><span class="op">)</span>  <span class="co"># 1382 students, 12 items</span></span>
+<span></span>
+<span><span class="va">fit_alg</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/rasch_fit.html">rasch_fit</a></span><span class="op">(</span><span class="va">algebra</span>, seed <span class="op">=</span> <span class="fl">123</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit_alg</span><span class="op">)</span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/graphics/plot.default.html" class="external-link">plot</a></span><span class="op">(</span><span class="va">fit_alg</span>, type <span class="op">=</span> <span class="st">"wright"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="learn-more">Learn More<a class="anchor" aria-label="anchor" href="#learn-more"></a>
 </h2>
 <ul>
-<li><a href="https://ndukaboika.github.io/birt/articles/getting-started.html">Getting Started vignette</a></li>
-<li><a href="https://ndukaboika.github.io/birt/reference/">Function reference</a></li>
-<li><a href="https://ndukaboika.github.io/birt/articles/getting-started.html#prior-distributions">Prior distributions guide</a></li>
+<li>
+<strong><a href="https://ndukaboika.github.io/birt/articles/getting-started.html">Getting Started</a></strong> — Full tutorial covering all three models, priors, diagnostics, and plots</li>
+<li>
+<strong><a href="https://ndukaboika.github.io/birt/reference/">Function Reference</a></strong> — Documentation for every function</li>
+<li>
+<strong><a href="https://ndukaboika.github.io/birt/articles/getting-started.html#prior-distributions">Prior Distributions Guide</a></strong> — Default priors, customization, and sensitivity analysis</li>
+</ul>
+</div>
+<div class="section level2">
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h2>
+<p>If you use birt in your research, please cite:</p>
+<pre><code>Boika, N. (2026). birt: Bayesian Item Response Theory models in R.
+R package. https://github.com/Ndukaboika/birt</code></pre>
+</div>
+<div class="section level2">
+<h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a>
+</h2>
+<ul>
+<li>Luo, Y., &amp; Jiao, H. (2018). Using the Stan program for Bayesian item response theory. <em>Educational and Psychological Measurement, 78</em>(3), 384–408.</li>
+<li>Stan Development Team (2024). <em>Stan User’s Guide</em>, §1.11: Item-Response Theory Models.</li>
+<li>Gelman, A., Jakulin, A., Pittau, M. G., &amp; Su, Y. S. (2008). A weakly informative default prior distribution for logistic and other regression models. <em>Annals of Applied Statistics, 2</em>(4), 1360–1383.</li>
 </ul>
 </div>
 </div>

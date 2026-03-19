@@ -8,11 +8,17 @@ Fits a three-parameter logistic IRT model using CmdStan. The model is:
 ``` r
 threepl_fit(
   data,
-  prior_delta = c(0.75, 1),
-  prior_alpha_sd = 1,
-  prior_beta_sd = 1,
+  prior_delta = c(0, 1),
+  prior_alpha_sd = 1.5,
+  prior_beta = c(0, 1.5),
+  prior_beta_mean = NULL,
+  prior_beta_sd = NULL,
   prior_a = c(0, 0.5),
-  prior_c = c(5, 23),
+  prior_a_meanlog = NULL,
+  prior_a_sdlog = NULL,
+  prior_c = c(2, 8),
+  prior_c_alpha = NULL,
+  prior_c_beta = NULL,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
@@ -31,27 +37,59 @@ threepl_fit(
 
 - prior_delta:
 
-  Prior for mean ability: `c(mean, sd)`. Default `c(0.75, 1)`.
+  Prior for mean ability: `c(mean, sd)`. Default `c(0, 1)`.
 
 - prior_alpha_sd:
 
-  Prior SD for student ability deviations. Default 1.
+  Prior SD for student ability deviations. Default 1.5.
+
+- prior_beta:
+
+  Prior for item difficulties when all items share the same prior:
+  `c(mean, sd)`. Default `c(0, 1.5)`. Ignored if `prior_beta_mean` or
+  `prior_beta_sd` is provided.
+
+- prior_beta_mean:
+
+  Numeric vector of length K. Per-item prior means for difficulty.
+  Overrides `prior_beta`.
 
 - prior_beta_sd:
 
-  Prior SD for item difficulties. Default 1.
+  Numeric vector of length K. Per-item prior SDs for difficulty.
+  Overrides `prior_beta`.
 
 - prior_a:
 
-  Prior for discrimination (lognormal): `c(meanlog, sdlog)`. Default
-  `c(0, 0.5)`.
+  Prior for discrimination when all items share the same prior
+  (lognormal): `c(meanlog, sdlog)`. Default `c(0, 0.5)`. Ignored if
+  `prior_a_meanlog` or `prior_a_sdlog` is provided.
+
+- prior_a_meanlog:
+
+  Numeric vector of length K. Per-item prior meanlog for discrimination.
+  Overrides `prior_a`.
+
+- prior_a_sdlog:
+
+  Numeric vector of length K. Per-item prior sdlog for discrimination.
+  Overrides `prior_a`.
 
 - prior_c:
 
-  Prior for guessing (beta distribution): `c(alpha, beta)`. Default
-  `c(5, 23)` means Beta(5, 23) with mean 0.18. For 4-option MC items,
-  try `c(5, 15)` (mean 0.25). For 5-option MC items, try `c(5, 20)`
-  (mean 0.20). For free-response items, try `c(1, 19)` (mean 0.05).
+  Prior for guessing when all items share the same prior (beta
+  distribution): `c(alpha, beta)`. Default `c(2, 8)`. Ignored if
+  `prior_c_alpha` or `prior_c_beta` is provided.
+
+- prior_c_alpha:
+
+  Numeric vector of length K. Per-item alpha parameter for the Beta
+  guessing prior. Overrides `prior_c`.
+
+- prior_c_beta:
+
+  Numeric vector of length K. Per-item beta parameter for the Beta
+  guessing prior. Overrides `prior_c`.
 
 - chains:
 
@@ -90,9 +128,13 @@ sim <- rasch_simulate(J = 500, K = 10, seed = 42)
 # Default priors
 fit3 <- threepl_fit(sim$data, seed = 123)
 
-# 4-option multiple choice
+# Per-item: items 1-5 are 4-option MC, items 6-10 are 5-option MC
+K <- 10
+c_alpha <- c(rep(5, 5), rep(5, 5))
+c_beta  <- c(rep(15, 5), rep(20, 5))  # mean 0.25 vs 0.20
 fit3 <- threepl_fit(sim$data,
-  prior_c = c(5, 15),
+  prior_c_alpha = c_alpha,
+  prior_c_beta = c_beta,
   seed = 123
 )
 } # }
