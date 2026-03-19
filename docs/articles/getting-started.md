@@ -116,17 +116,19 @@ $`c_k \approx 0.25`$.
 birt uses weakly informative default priors that work across a wide
 range of testing scenarios. The defaults are deliberately neutral — they
 make no strong assumptions about your test or students. Users with
-domain knowledge can override any prior with more informative values.
+domain knowledge can override any prior at two levels: class-level (same
+prior for all items) or per-item (different prior for each individual
+item).
 
 ### Default Priors
 
-| Parameter | Default Prior | R Argument | 95% Range |
-|----|----|----|----|
-| $`\delta`$ (mean ability) | Normal(0, 1) | `prior_delta = c(0, 1)` | -2.0 to 2.0 |
-| $`\alpha_j`$ (ability deviation) | Normal(0, 1.5) | `prior_alpha_sd = 1.5` | -3.0 to 3.0 |
-| $`\beta_k`$ (difficulty) | Normal(0, 1.5) | `prior_beta_sd = 1.5` | -3.0 to 3.0 |
-| $`a_k`$ (discrimination) | LogNormal(0, 0.5) | `prior_a = c(0, 0.5)` | 0.37 to 2.72 |
-| $`c_k`$ (guessing) | Beta(2, 8) | `prior_c = c(2, 8)` | 0.03 to 0.45 |
+| Parameter | Default Prior | Class-level Argument | Per-item Arguments | 95% Range |
+|----|----|----|----|----|
+| $`\delta`$ (mean ability) | Normal(0, 1) | `prior_delta = c(0, 1)` | — | -2.0 to 2.0 |
+| $`\alpha_j`$ (ability deviation) | Normal(0, 1.5) | `prior_alpha_sd = 1.5` | — | -3.0 to 3.0 |
+| $`\beta_k`$ (difficulty) | Normal(0, 1.5) | `prior_beta = c(0, 1.5)` | `prior_beta_mean`, `prior_beta_sd` | -3.0 to 3.0 |
+| $`a_k`$ (discrimination) | LogNormal(0, 0.5) | `prior_a = c(0, 0.5)` | `prior_a_meanlog`, `prior_a_sdlog` | 0.37 to 2.72 |
+| $`c_k`$ (guessing) | Beta(2, 8) | `prior_c = c(2, 8)` | `prior_c_alpha`, `prior_c_beta` | 0.03 to 0.45 |
 
 These defaults are informed by recommendations from the Stan User’s
 Guide (Stan Development Team, 2024), Luo and Jiao (2018), and the edstan
@@ -149,10 +151,9 @@ scale of the model.
   enough to accommodate different item formats without making strong
   assumptions.
 
-### Customizing Priors
+### Customizing Priors: Class-Level
 
-Users who have prior knowledge about their test can override any
-default:
+Set the same prior for all items of a parameter type:
 
 ``` r
 # If you know students tend to perform above average
@@ -161,9 +162,9 @@ fit <- rasch_fit(data,
   seed = 123
 )
 
-# If your items have tightly clustered difficulties
+# Wider difficulty prior for all items
 fit <- rasch_fit(data,
-  prior_beta_sd = 0.5,
+  prior_beta = c(0, 3),
   seed = 123
 )
 
@@ -189,18 +190,82 @@ fit3 <- threepl_fit(data,
 fit <- rasch_fit(data,
   prior_delta    = c(0, 3),
   prior_alpha_sd = 3,
-  prior_beta_sd  = 3,
+  prior_beta     = c(0, 3),
   seed = 123
 )
 ```
 
+### Customizing Priors: Per-Item
+
+Set a different prior for each individual item. Use this when you have
+specific knowledge about certain items from pilot testing, expert
+judgment, or previous administrations.
+
+``` r
+K <- ncol(data)
+
+# Difficulty: item 3 is known to be hard, item 7 is known to be easy
+b_mean <- rep(0, K)        # default for all items
+b_mean[3] <- 2.0           # item 3: prior centered at 2.0 (hard)
+b_mean[7] <- -1.5          # item 7: prior centered at -1.5 (easy)
+
+b_sd <- rep(1.5, K)        # default uncertainty for all items
+b_sd[c(3, 7)] <- 0.5       # tighter prior for items we know about
+
+fit <- rasch_fit(data,
+  prior_beta_mean = b_mean,
+  prior_beta_sd = b_sd,
+  seed = 123
+)
+```
+
+``` r
+# Discrimination: item 5 is known to be poorly discriminating
+a_meanlog <- rep(0, K)       # default: centered at 1.0 for all items
+a_meanlog[5] <- -0.5         # item 5: prior centered below 1.0
+
+a_sdlog <- rep(0.5, K)       # default uncertainty for all items
+a_sdlog[5] <- 0.3            # tighter prior for item 5
+
+fit2 <- twopl_fit(data,
+  prior_a_meanlog = a_meanlog,
+  prior_a_sdlog = a_sdlog,
+  seed = 123
+)
+```
+
+``` r
+# Guessing: mixed item formats on the same test
+# Items 1-5 are 4-option MC, items 6-10 are 5-option MC
+c_alpha <- rep(5, K)
+c_beta  <- c(rep(15, 5), rep(20, 5))   # mean 0.25 vs 0.20
+
+fit3 <- threepl_fit(data,
+  prior_c_alpha = c_alpha,
+  prior_c_beta = c_beta,
+  seed = 123
+)
+```
+
+Per-item arguments override class-level arguments. If you provide
+`prior_beta_mean`, the `prior_beta` argument is ignored for the mean. If
+you provide `prior_beta_sd`, the `prior_beta` argument is ignored for
+the SD.
+
 ### Checking What Priors Were Used
 
-The priors are stored in the fitted object:
+The priors are stored in the fitted object as vectors (one value per
+item):
 
 ``` r
 fit <- rasch_fit(data, seed = 123)
 fit$priors
+
+# Shows:
+# $delta     — c(0, 1)
+# $alpha_sd  — 1.5
+# $beta_mean — c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0)  one per item
+# $beta_sd   — c(1.5, 1.5, 1.5, ...)              one per item
 ```
 
 ## Quick Start with Simulated Data
@@ -426,12 +491,22 @@ plot(fit2, type = "info")
 ### Custom Priors for 2PL
 
 ``` r
-fit2_custom <- twopl_fit(sim$data,
-  prior_a = c(0, 1),         # wider discrimination prior
-  prior_delta = c(0.5, 0.5), # informative: students above average
+# Class-level: wider discrimination prior for all items
+fit2_wide <- twopl_fit(sim$data,
+  prior_a = c(0, 1),
   seed = 123
 )
-fit2_custom$priors
+
+# Per-item: item 5 is known to be poorly discriminating
+K <- ncol(sim$data)
+a_meanlog <- rep(0, K)
+a_meanlog[5] <- -0.5
+
+fit2_item <- twopl_fit(sim$data,
+  prior_a_meanlog = a_meanlog,
+  seed = 123
+)
+fit2_item$priors
 ```
 
 ## Fitting the 3PL Model
@@ -458,7 +533,7 @@ Interpretation:
 - $`c \approx 0`$: No guessing (expected for free-response items).
 - $`c > 0.35`$: Unusually high — the item may have poor distractors.
 
-### 3PL with Test-Specific Guessing Priors
+### 3PL with Class-Level Guessing Priors
 
 ``` r
 # 4-option multiple choice
@@ -478,6 +553,22 @@ fit3_fr <- threepl_fit(sim_large$data,
   prior_c = c(1, 19),   # Beta(1,19), mean = 0.05
   seed = 123
 )
+```
+
+### 3PL with Per-Item Guessing Priors
+
+``` r
+# Mixed test: items 1-5 are 4-option MC, items 6-10 are 5-option MC
+K <- 10
+c_alpha <- rep(5, K)
+c_beta  <- c(rep(15, 5), rep(20, 5))   # mean 0.25 vs 0.20
+
+fit3_mixed <- threepl_fit(sim_large$data,
+  prior_c_alpha = c_alpha,
+  prior_c_beta = c_beta,
+  seed = 123
+)
+fit3_mixed$priors
 ```
 
 ### 3PL Plots
@@ -532,6 +623,31 @@ plot(fit_alg, type = "icc")      # Rasch: parallel curves
 plot(fit_alg_2pl, type = "icc")  # 2PL: varying slopes
 ```
 
+### Per-Item Priors on Real Data
+
+``` r
+# Suppose from pilot testing you know items Alg3 and Alg8 are hard
+K <- ncol(algebra)
+b_mean <- rep(0, K)
+b_mean[3] <- 1.5    # Alg3 is hard
+b_mean[8] <- 2.0    # Alg8 is very hard
+
+fit_alg_informed <- rasch_fit(algebra,
+  prior_beta_mean = b_mean,
+  seed = 123
+)
+
+# Compare default vs informed estimates
+items_default  <- item_params(fit_alg)
+items_informed <- item_params(fit_alg_informed)
+
+cbind(
+  item = items_default$item,
+  default = round(items_default$mean, 2),
+  informed = round(items_informed$mean, 2)
+)
+```
+
 ### Using Your Own Data
 
 Your data should be a matrix or data frame:
@@ -567,7 +683,7 @@ fit_default <- rasch_fit(algebra, seed = 123)
 # Tighter priors
 fit_tight <- rasch_fit(algebra,
   prior_alpha_sd = 0.5,
-  prior_beta_sd = 0.5,
+  prior_beta = c(0, 0.5),
   seed = 123
 )
 
@@ -575,7 +691,7 @@ fit_tight <- rasch_fit(algebra,
 fit_wide <- rasch_fit(algebra,
   prior_delta    = c(0, 5),
   prior_alpha_sd = 3,
-  prior_beta_sd  = 3,
+  prior_beta     = c(0, 3),
   seed = 123
 )
 
