@@ -86,28 +86,6 @@ probability of a correct response by pure chance.</li>
 producing full posterior distributions for every parameter. This means
 you get credible intervals, convergence diagnostics, and posterior
 predictive checks — not just point estimates.</p>
-<div class="section level3">
-<h3 id="why-bayesian">Why Bayesian?<a class="anchor" aria-label="anchor" href="#why-bayesian"></a>
-</h3>
-<p>Traditional IRT software uses Maximum Likelihood Estimation (MLE).
-Bayesian estimation via MCMC offers several advantages:</p>
-<ul>
-<li>
-<strong>Full uncertainty quantification</strong>: You get credible
-intervals for every parameter, not just point estimates.</li>
-<li>
-<strong>Works with small samples</strong>: MLE can fail or produce
-extreme estimates with small samples. Priors stabilize Bayesian
-estimates.</li>
-<li>
-<strong>Missing data handled naturally</strong>: The Bayesian
-framework simply skips unobserved responses.</li>
-<li>
-<strong>Model diagnostics built in</strong>: Convergence
-diagnostics, trace plots, and posterior predictive checks are
-straightforward.</li>
-</ul>
-</div>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -129,7 +107,7 @@ straightforward.</li>
 <p>Verify the installation:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="fu">cmdstanr</span><span class="fu">::</span><span class="fu"><a href="https://mc-stan.org/cmdstanr/reference/set_cmdstan_path.html" class="external-link">cmdstan_version</a></span><span class="op">(</span><span class="op">)</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ndukaboika/birt" class="external-link">birt</a></span><span class="op">)</span></span></code></pre></div>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Ndukaboika/birt" class="external-link">birt</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="the-models">The Models<a class="anchor" aria-label="anchor" href="#the-models"></a>
@@ -468,7 +446,7 @@ item):</p>
 <p><code><a href="../reference/rasch_simulate.html">rasch_simulate()</a></code> generates data with known true
 parameters so you can verify the model recovers the correct values.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/ndukaboika/birt" class="external-link">birt</a></span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/Ndukaboika/birt" class="external-link">birt</a></span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">sim</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/rasch_simulate.html">rasch_simulate</a></span><span class="op">(</span></span>
 <span>  J <span class="op">=</span> <span class="fl">300</span>,            <span class="co"># 300 students</span></span>

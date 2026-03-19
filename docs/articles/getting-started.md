@@ -18,20 +18,6 @@ producing full posterior distributions for every parameter. This means
 you get credible intervals, convergence diagnostics, and posterior
 predictive checks — not just point estimates.
 
-### Why Bayesian?
-
-Traditional IRT software uses Maximum Likelihood Estimation (MLE).
-Bayesian estimation via MCMC offers several advantages:
-
-- **Full uncertainty quantification**: You get credible intervals for
-  every parameter, not just point estimates.
-- **Works with small samples**: MLE can fail or produce extreme
-  estimates with small samples. Priors stabilize Bayesian estimates.
-- **Missing data handled naturally**: The Bayesian framework simply
-  skips unobserved responses.
-- **Model diagnostics built in**: Convergence diagnostics, trace plots,
-  and posterior predictive checks are straightforward.
-
 ## Installation
 
 birt requires CmdStan installed on your computer.
