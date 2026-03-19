@@ -8,7 +8,9 @@ rasch_fit(
   data,
   prior_delta = c(0, 1),
   prior_alpha_sd = 1.5,
-  prior_beta_sd = 1.5,
+  prior_beta = c(0, 1.5),
+  prior_beta_mean = NULL,
+  prior_beta_sd = NULL,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
@@ -22,13 +24,20 @@ rasch_fit(
 Rows = students, Columns = questions. NA is allowed.}
 
 \item{prior_delta}{Prior for mean ability: \code{c(mean, sd)}.
-Default \code{c(0.75, 1)} means Normal(0.75, 1).}
+Default \code{c(0, 1)} means Normal(0, 1).}
 
 \item{prior_alpha_sd}{Prior SD for student ability deviations.
-Default 1 means alpha ~ Normal(0, 1).}
+Default 1.5 means alpha ~ Normal(0, 1.5).}
 
-\item{prior_beta_sd}{Prior SD for item difficulties.
-Default 1 means beta ~ Normal(0, 1).}
+\item{prior_beta}{Prior for item difficulties when all items share
+the same prior: \code{c(mean, sd)}. Default \code{c(0, 1.5)}.
+Ignored if \code{prior_beta_mean} or \code{prior_beta_sd} is provided.}
+
+\item{prior_beta_mean}{Numeric vector of length K (one per item).
+Per-item prior means for difficulty. Overrides \code{prior_beta}.}
+
+\item{prior_beta_sd}{Numeric vector of length K (one per item).
+Per-item prior SDs for difficulty. Overrides \code{prior_beta}.}
 
 \item{chains}{Number of MCMC chains. Default 4.}
 
@@ -40,8 +49,7 @@ Default 1 means beta ~ Normal(0, 1).}
 
 \item{seed}{Random seed for reproducibility.}
 
-\item{...}{Extra arguments passed to cmdstanr's sample() method
-(e.g., \code{adapt_delta = 0.95}).}
+\item{...}{Extra arguments passed to cmdstanr's sample() method.}
 }
 \value{
 An object of class \code{birt_fit}.
@@ -54,16 +62,14 @@ Fits a Rasch model using CmdStan. The model is:
 \dontrun{
 sim <- rasch_simulate(J = 200, K = 10, seed = 42)
 
-# Default priors
+# Default priors (same for all items)
 fit <- rasch_fit(sim$data, seed = 123)
 
-# Custom priors
-fit <- rasch_fit(sim$data,
-  prior_delta = c(0, 2),
-  prior_alpha_sd = 2,
-  prior_beta_sd = 2,
-  seed = 123
-)
+# Per-item priors: item 3 is known to be hard
+K <- ncol(sim$data)
+b_mean <- rep(0, K)
+b_mean[3] <- 2.0
+fit <- rasch_fit(sim$data, prior_beta_mean = b_mean, seed = 123)
 }
 
 }

@@ -7,16 +7,29 @@
 #' @param data A matrix or data frame of binary (0/1) responses.
 #'   Rows = students, Columns = questions. NA is allowed.
 #' @param prior_delta Prior for mean ability: `c(mean, sd)`.
-#'   Default `c(0.75, 1)`.
-#' @param prior_alpha_sd Prior SD for student ability deviations. Default 1.
-#' @param prior_beta_sd Prior SD for item difficulties. Default 1.
-#' @param prior_a Prior for discrimination (lognormal): `c(meanlog, sdlog)`.
-#'   Default `c(0, 0.5)`.
-#' @param prior_c Prior for guessing (beta distribution): `c(alpha, beta)`.
-#'   Default `c(5, 23)` means Beta(5, 23) with mean 0.18.
-#'   For 4-option MC items, try `c(5, 15)` (mean 0.25).
-#'   For 5-option MC items, try `c(5, 20)` (mean 0.20).
-#'   For free-response items, try `c(1, 19)` (mean 0.05).
+#'   Default `c(0, 1)`.
+#' @param prior_alpha_sd Prior SD for student ability deviations. Default 1.5.
+#' @param prior_beta Prior for item difficulties when all items share
+#'   the same prior: `c(mean, sd)`. Default `c(0, 1.5)`.
+#'   Ignored if `prior_beta_mean` or `prior_beta_sd` is provided.
+#' @param prior_beta_mean Numeric vector of length K. Per-item prior means
+#'   for difficulty. Overrides `prior_beta`.
+#' @param prior_beta_sd Numeric vector of length K. Per-item prior SDs
+#'   for difficulty. Overrides `prior_beta`.
+#' @param prior_a Prior for discrimination when all items share the same
+#'   prior (lognormal): `c(meanlog, sdlog)`. Default `c(0, 0.5)`.
+#'   Ignored if `prior_a_meanlog` or `prior_a_sdlog` is provided.
+#' @param prior_a_meanlog Numeric vector of length K. Per-item prior
+#'   meanlog for discrimination. Overrides `prior_a`.
+#' @param prior_a_sdlog Numeric vector of length K. Per-item prior
+#'   sdlog for discrimination. Overrides `prior_a`.
+#' @param prior_c Prior for guessing when all items share the same
+#'   prior (beta distribution): `c(alpha, beta)`. Default `c(2, 8)`.
+#'   Ignored if `prior_c_alpha` or `prior_c_beta` is provided.
+#' @param prior_c_alpha Numeric vector of length K. Per-item alpha
+#'   parameter for the Beta guessing prior. Overrides `prior_c`.
+#' @param prior_c_beta Numeric vector of length K. Per-item beta
+#'   parameter for the Beta guessing prior. Overrides `prior_c`.
 #' @param chains Number of MCMC chains. Default 4.
 #' @param parallel_chains Chains to run in parallel. Default 4.
 #' @param iter_warmup Warmup iterations per chain. Default 1000.
@@ -33,9 +46,13 @@
 #' # Default priors
 #' fit3 <- threepl_fit(sim$data, seed = 123)
 #'
-#' # 4-option multiple choice
+#' # Per-item: items 1-5 are 4-option MC, items 6-10 are 5-option MC
+#' K <- 10
+#' c_alpha <- c(rep(5, 5), rep(5, 5))
+#' c_beta  <- c(rep(15, 5), rep(20, 5))  # mean 0.25 vs 0.20
 #' fit3 <- threepl_fit(sim$data,
-#'   prior_c = c(5, 15),
+#'   prior_c_alpha = c_alpha,
+#'   prior_c_beta = c_beta,
 #'   seed = 123
 #' )
 #' }
@@ -44,9 +61,15 @@
 threepl_fit <- function(data,
                         prior_delta = c(0, 1),
                         prior_alpha_sd = 1.5,
-                        prior_beta_sd = 1.5,
+                        prior_beta = c(0, 1.5),
+                        prior_beta_mean = NULL,
+                        prior_beta_sd = NULL,
                         prior_a = c(0, 0.5),
+                        prior_a_meanlog = NULL,
+                        prior_a_sdlog = NULL,
                         prior_c = c(2, 8),
+                        prior_c_alpha = NULL,
+                        prior_c_beta = NULL,
                         chains = 4,
                         parallel_chains = 4,
                         iter_warmup = 1000,
@@ -83,9 +106,54 @@ threepl_fit <- function(data,
   # --- Validate priors ---
   checkmate::assert_numeric(prior_delta, len = 2)
   checkmate::assert_number(prior_alpha_sd, lower = 0)
-  checkmate::assert_number(prior_beta_sd, lower = 0)
+  checkmate::assert_numeric(prior_beta, len = 2)
   checkmate::assert_numeric(prior_a, len = 2)
   checkmate::assert_numeric(prior_c, len = 2, lower = 0)
+
+  # --- Build per-item beta priors ---
+  if (!is.null(prior_beta_mean)) {
+    checkmate::assert_numeric(prior_beta_mean, len = K)
+    b_mean <- prior_beta_mean
+  } else {
+    b_mean <- rep(prior_beta[1], K)
+  }
+
+  if (!is.null(prior_beta_sd)) {
+    checkmate::assert_numeric(prior_beta_sd, len = K, lower = 0)
+    b_sd <- prior_beta_sd
+  } else {
+    b_sd <- rep(prior_beta[2], K)
+  }
+
+  # --- Build per-item discrimination priors ---
+  if (!is.null(prior_a_meanlog)) {
+    checkmate::assert_numeric(prior_a_meanlog, len = K)
+    a_ml <- prior_a_meanlog
+  } else {
+    a_ml <- rep(prior_a[1], K)
+  }
+
+  if (!is.null(prior_a_sdlog)) {
+    checkmate::assert_numeric(prior_a_sdlog, len = K, lower = 0)
+    a_sl <- prior_a_sdlog
+  } else {
+    a_sl <- rep(prior_a[2], K)
+  }
+
+  # --- Build per-item guessing priors ---
+  if (!is.null(prior_c_alpha)) {
+    checkmate::assert_numeric(prior_c_alpha, len = K, lower = 0)
+    c_a <- prior_c_alpha
+  } else {
+    c_a <- rep(prior_c[1], K)
+  }
+
+  if (!is.null(prior_c_beta)) {
+    checkmate::assert_numeric(prior_c_beta, len = K, lower = 0)
+    c_b <- prior_c_beta
+  } else {
+    c_b <- rep(prior_c[2], K)
+  }
 
   # --- Names ---
   item_names <- colnames(data)
@@ -107,11 +175,12 @@ threepl_fit <- function(data,
     prior_delta_mean = prior_delta[1],
     prior_delta_sd   = prior_delta[2],
     prior_alpha_sd   = prior_alpha_sd,
-    prior_beta_sd    = prior_beta_sd,
-    prior_a_meanlog  = prior_a[1],
-    prior_a_sdlog    = prior_a[2],
-    prior_c_alpha    = prior_c[1],
-    prior_c_beta     = prior_c[2]
+    prior_beta_mean  = b_mean,
+    prior_beta_sd    = b_sd,
+    prior_a_meanlog  = a_ml,
+    prior_a_sdlog    = a_sl,
+    prior_c_alpha    = c_a,
+    prior_c_beta     = c_b
   )
 
   # --- Compile ---
@@ -145,11 +214,14 @@ threepl_fit <- function(data,
       K          = K,
       model      = "3PL",
       priors     = list(
-        delta    = prior_delta,
-        alpha_sd = prior_alpha_sd,
-        beta_sd  = prior_beta_sd,
-        a        = prior_a,
-        c_param  = prior_c
+        delta     = prior_delta,
+        alpha_sd  = prior_alpha_sd,
+        beta_mean = b_mean,
+        beta_sd   = b_sd,
+        a_meanlog = a_ml,
+        a_sdlog   = a_sl,
+        c_alpha   = c_a,
+        c_beta    = c_b
       )
     ),
     class = "birt_3pl_fit"

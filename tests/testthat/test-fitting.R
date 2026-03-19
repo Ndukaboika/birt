@@ -1,8 +1,8 @@
 # These tests actually run Stan — skip if CmdStan is not installed
 skip_if_not_installed("instantiate")
 skip_if_not(
-  tryCatch({instantiate::stan_package_model(); TRUE}, error = function(e) FALSE),
-  message = "instatiate not installed"
+  tryCatch({instantiate::stan_package_model(name = "rasch", package = "birt"); TRUE}, error = function(e) FALSE),
+  message = "Stan models not compiled"
 )
 
 test_that("rasch_fit runs on simulated data", {
@@ -17,7 +17,8 @@ test_that("rasch_fit runs on simulated data", {
   # Check priors are stored
   expect_equal(fit$priors$delta, c(0, 1))
   expect_equal(fit$priors$alpha_sd, 1.5)
-  expect_equal(fit$priors$beta_sd, 1.5)
+  expect_equal(fit$priors$beta_mean, rep(0, 5))
+  expect_equal(fit$priors$beta_sd, rep(1.5, 5))
 })
 
 test_that("rasch_fit works with custom priors", {
@@ -25,13 +26,28 @@ test_that("rasch_fit works with custom priors", {
   fit <- rasch_fit(sim$data,
                    prior_delta = c(0, 2),
                    prior_alpha_sd = 2,
-                   prior_beta_sd = 2,
+                   prior_beta = c(0, 2),
                    chains = 2, iter_sampling = 200, seed = 123
   )
 
   expect_equal(fit$priors$delta, c(0, 2))
   expect_equal(fit$priors$alpha_sd, 2)
-  expect_equal(fit$priors$beta_sd, 2)
+  expect_equal(fit$priors$beta_sd, rep(2, 5))
+})
+
+test_that("rasch_fit works with per-item priors", {
+  sim <- rasch_simulate(J = 100, K = 5, seed = 42)
+  b_mean <- c(0, 0, 2, 0, -1)
+  b_sd <- c(1.5, 1.5, 0.5, 1.5, 0.5)
+
+  fit <- rasch_fit(sim$data,
+                   prior_beta_mean = b_mean,
+                   prior_beta_sd = b_sd,
+                   chains = 2, iter_sampling = 200, seed = 123
+  )
+
+  expect_equal(fit$priors$beta_mean, b_mean)
+  expect_equal(fit$priors$beta_sd, b_sd)
 })
 
 test_that("parameter extraction works for Rasch", {
@@ -51,7 +67,7 @@ test_that("parameter extraction works for Rasch", {
 
 test_that("diagnostics work for Rasch", {
   sim <- rasch_simulate(J = 100, K = 5, seed = 42)
-  fit <- rasch_fit(sim$data, chains = 2, iter_sampling = 200, seed = 123)
+  fit <- rasch_fit(sim$data, chains = 2, iter_sampling = 200, seed = 456)
 
   ifit <- item_fit(fit)
   expect_equal(nrow(ifit), 5)
@@ -67,7 +83,8 @@ test_that("twopl_fit runs and returns correct class", {
 
   expect_s3_class(fit, "birt_2pl_fit")
   expect_equal(fit$model, "2PL")
-  expect_equal(fit$priors$a, c(0, 0.5))
+  expect_equal(fit$priors$a_meanlog, rep(0, 5))
+  expect_equal(fit$priors$a_sdlog, rep(0.5, 5))
 
   disc <- discrim_params(fit)
   expect_equal(nrow(disc), 5)
@@ -76,11 +93,14 @@ test_that("twopl_fit runs and returns correct class", {
 
 test_that("threepl_fit runs and returns correct class", {
   sim <- rasch_simulate(J = 100, K = 5, seed = 42)
-  fit <- threepl_fit(sim$data, chains = 2, iter_sampling = 200, seed = 123)
+  fit <- suppressWarnings(
+    threepl_fit(sim$data, chains = 2, iter_sampling = 200, seed = 123)
+  )
 
   expect_s3_class(fit, "birt_3pl_fit")
   expect_equal(fit$model, "3PL")
-  expect_equal(fit$priors$c_param, c(5, 23))
+  expect_equal(fit$priors$c_alpha, rep(2, 5))
+  expect_equal(fit$priors$c_beta, rep(8, 5))
 
   guess <- guessing_params(fit)
   expect_equal(nrow(guess), 5)

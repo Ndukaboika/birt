@@ -8,8 +8,12 @@ twopl_fit(
   data,
   prior_delta = c(0, 1),
   prior_alpha_sd = 1.5,
-  prior_beta_sd = 1.5,
+  prior_beta = c(0, 1.5),
+  prior_beta_mean = NULL,
+  prior_beta_sd = NULL,
   prior_a = c(0, 0.5),
+  prior_a_meanlog = NULL,
+  prior_a_sdlog = NULL,
   chains = 4,
   parallel_chains = 4,
   iter_warmup = 1000,
@@ -23,14 +27,29 @@ twopl_fit(
 Rows = students, Columns = questions. NA is allowed.}
 
 \item{prior_delta}{Prior for mean ability: \code{c(mean, sd)}.
-Default \code{c(0.75, 1)}.}
+Default \code{c(0, 1)}.}
 
-\item{prior_alpha_sd}{Prior SD for student ability deviations. Default 1.}
+\item{prior_alpha_sd}{Prior SD for student ability deviations. Default 1.5.}
 
-\item{prior_beta_sd}{Prior SD for item difficulties. Default 1.}
+\item{prior_beta}{Prior for item difficulties when all items share
+the same prior: \code{c(mean, sd)}. Default \code{c(0, 1.5)}.
+Ignored if \code{prior_beta_mean} or \code{prior_beta_sd} is provided.}
 
-\item{prior_a}{Prior for discrimination (lognormal): \code{c(meanlog, sdlog)}.
-Default \code{c(0, 0.5)} means LogNormal(0, 0.5), centered around 1.0.}
+\item{prior_beta_mean}{Numeric vector of length K. Per-item prior means
+for difficulty. Overrides \code{prior_beta}.}
+
+\item{prior_beta_sd}{Numeric vector of length K. Per-item prior SDs
+for difficulty. Overrides \code{prior_beta}.}
+
+\item{prior_a}{Prior for discrimination when all items share the same
+prior (lognormal): \code{c(meanlog, sdlog)}. Default \code{c(0, 0.5)}.
+Ignored if \code{prior_a_meanlog} or \code{prior_a_sdlog} is provided.}
+
+\item{prior_a_meanlog}{Numeric vector of length K. Per-item prior
+meanlog for discrimination. Overrides \code{prior_a}.}
+
+\item{prior_a_sdlog}{Numeric vector of length K. Per-item prior
+sdlog for discrimination. Overrides \code{prior_a}.}
 
 \item{chains}{Number of MCMC chains. Default 4.}
 
@@ -59,9 +78,15 @@ sim <- rasch_simulate(J = 300, K = 10, seed = 42)
 # Default priors
 fit2 <- twopl_fit(sim$data, seed = 123)
 
-# Custom priors
+# Per-item: item 5 is known to be poorly discriminating
+K <- ncol(sim$data)
+a_meanlog <- rep(0, K)
+a_sdlog <- rep(0.5, K)
+a_meanlog[5] <- -0.5   # prior centered below 1.0
+a_sdlog[5] <- 0.3      # tighter prior
 fit2 <- twopl_fit(sim$data,
-  prior_a = c(0, 1),
+  prior_a_meanlog = a_meanlog,
+  prior_a_sdlog = a_sdlog,
   seed = 123
 )
 }

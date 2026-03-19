@@ -1,4 +1,4 @@
-// Three-Parameter Logistic (3PL) IRT model with user-configurable priors
+// Three-Parameter Logistic (3PL) IRT model with per-item configurable priors
 // P(correct) = c[k] + (1 - c[k]) * logistic(a[k] * (alpha[j] + delta - beta[k]))
 
 data {
@@ -9,15 +9,22 @@ data {
   array[N] int<lower=1, upper=K> kk;
   array[N] int<lower=0, upper=1> y;
 
-  // Prior hyperparameters (passed from R)
+  // Prior hyperparameters
   real prior_delta_mean;
   real<lower=0> prior_delta_sd;
   real<lower=0> prior_alpha_sd;
-  real<lower=0> prior_beta_sd;
-  real prior_a_meanlog;
-  real<lower=0> prior_a_sdlog;
-  real<lower=0> prior_c_alpha;
-  real<lower=0> prior_c_beta;
+
+  // Per-item priors for difficulty
+  vector[K] prior_beta_mean;
+  vector<lower=0>[K] prior_beta_sd;
+
+  // Per-item priors for discrimination
+  vector[K] prior_a_meanlog;
+  vector<lower=0>[K] prior_a_sdlog;
+
+  // Per-item priors for guessing
+  vector<lower=0>[K] prior_c_alpha;
+  vector<lower=0>[K] prior_c_beta;
 }
 
 parameters {
@@ -30,10 +37,16 @@ parameters {
 
 model {
   alpha ~ normal(0, prior_alpha_sd);
-  beta ~ normal(0, prior_beta_sd);
   delta ~ normal(prior_delta_mean, prior_delta_sd);
+
+  // Per-item priors
+  beta ~ normal(prior_beta_mean, prior_beta_sd);
   a ~ lognormal(prior_a_meanlog, prior_a_sdlog);
-  c ~ beta(prior_c_alpha, prior_c_beta);
+
+  // Beta distribution is not vectorized in Stan, need a loop
+  for (k in 1:K) {
+    c[k] ~ beta(prior_c_alpha[k], prior_c_beta[k]);
+  }
 
   {
     vector[N] prob;

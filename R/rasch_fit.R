@@ -6,18 +6,22 @@
 #' @param data A matrix or data frame of binary (0/1) responses.
 #'   Rows = students, Columns = questions. NA is allowed.
 #' @param prior_delta Prior for mean ability: `c(mean, sd)`.
-#'   Default `c(0.75, 1)` means Normal(0.75, 1).
+#'   Default `c(0, 1)` means Normal(0, 1).
 #' @param prior_alpha_sd Prior SD for student ability deviations.
-#'   Default 1 means alpha ~ Normal(0, 1).
-#' @param prior_beta_sd Prior SD for item difficulties.
-#'   Default 1 means beta ~ Normal(0, 1).
+#'   Default 1.5 means alpha ~ Normal(0, 1.5).
+#' @param prior_beta Prior for item difficulties when all items share
+#'   the same prior: `c(mean, sd)`. Default `c(0, 1.5)`.
+#'   Ignored if `prior_beta_mean` or `prior_beta_sd` is provided.
+#' @param prior_beta_mean Numeric vector of length K (one per item).
+#'   Per-item prior means for difficulty. Overrides `prior_beta`.
+#' @param prior_beta_sd Numeric vector of length K (one per item).
+#'   Per-item prior SDs for difficulty. Overrides `prior_beta`.
 #' @param chains Number of MCMC chains. Default 4.
 #' @param parallel_chains Chains to run in parallel. Default 4.
 #' @param iter_warmup Warmup iterations per chain. Default 1000.
 #' @param iter_sampling Sampling iterations per chain. Default 1000.
 #' @param seed Random seed for reproducibility.
-#' @param ... Extra arguments passed to cmdstanr's sample() method
-#'   (e.g., `adapt_delta = 0.95`).
+#' @param ... Extra arguments passed to cmdstanr's sample() method.
 #'
 #' @return An object of class `birt_fit`.
 #'
@@ -25,23 +29,23 @@
 #' \dontrun{
 #' sim <- rasch_simulate(J = 200, K = 10, seed = 42)
 #'
-#' # Default priors
+#' # Default priors (same for all items)
 #' fit <- rasch_fit(sim$data, seed = 123)
 #'
-#' # Custom priors
-#' fit <- rasch_fit(sim$data,
-#'   prior_delta = c(0, 2),
-#'   prior_alpha_sd = 2,
-#'   prior_beta_sd = 2,
-#'   seed = 123
-#' )
+#' # Per-item priors: item 3 is known to be hard
+#' K <- ncol(sim$data)
+#' b_mean <- rep(0, K)
+#' b_mean[3] <- 2.0
+#' fit <- rasch_fit(sim$data, prior_beta_mean = b_mean, seed = 123)
 #' }
 #'
 #' @export
 rasch_fit <- function(data,
                       prior_delta = c(0, 1),
                       prior_alpha_sd = 1.5,
-                      prior_beta_sd = 1.5,
+                      prior_beta = c(0, 1.5),
+                      prior_beta_mean = NULL,
+                      prior_beta_sd = NULL,
                       chains = 4,
                       parallel_chains = 4,
                       iter_warmup = 1000,
@@ -71,7 +75,22 @@ rasch_fit <- function(data,
   # --- Validate priors ---
   checkmate::assert_numeric(prior_delta, len = 2)
   checkmate::assert_number(prior_alpha_sd, lower = 0)
-  checkmate::assert_number(prior_beta_sd, lower = 0)
+  checkmate::assert_numeric(prior_beta, len = 2)
+
+  # --- Build per-item beta priors ---
+  if (!is.null(prior_beta_mean)) {
+    checkmate::assert_numeric(prior_beta_mean, len = K)
+    b_mean <- prior_beta_mean
+  } else {
+    b_mean <- rep(prior_beta[1], K)
+  }
+
+  if (!is.null(prior_beta_sd)) {
+    checkmate::assert_numeric(prior_beta_sd, len = K, lower = 0)
+    b_sd <- prior_beta_sd
+  } else {
+    b_sd <- rep(prior_beta[2], K)
+  }
 
   # --- Names ---
   item_names <- colnames(data)
@@ -93,11 +112,11 @@ rasch_fit <- function(data,
     prior_delta_mean = prior_delta[1],
     prior_delta_sd   = prior_delta[2],
     prior_alpha_sd   = prior_alpha_sd,
-    prior_beta_sd    = prior_beta_sd
+    prior_beta_mean  = b_mean,
+    prior_beta_sd    = b_sd
   )
 
   # --- Compile ---
-  # NEW — uses pre-compiled model (no compilation delay)
   mod <- instantiate::stan_package_model(
     name = "rasch",
     package = "birt"
@@ -128,9 +147,10 @@ rasch_fit <- function(data,
       K          = K,
       model      = "Rasch",
       priors     = list(
-        delta    = prior_delta,
-        alpha_sd = prior_alpha_sd,
-        beta_sd  = prior_beta_sd
+        delta     = prior_delta,
+        alpha_sd  = prior_alpha_sd,
+        beta_mean = b_mean,
+        beta_sd   = b_sd
       )
     ),
     class = "birt_fit"
