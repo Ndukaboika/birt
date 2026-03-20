@@ -35,7 +35,7 @@ install.packages("cmdstanr", repos = c(
 cmdstanr::install_cmdstan()
 
 # 3. Install birt (from source to trigger Stan compilation)
-pak::pak("Ndukaboika/birt")
+remotes::install_github("Ndukaboika/birt")
 ```
 
 ## Quick Example
