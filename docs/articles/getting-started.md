@@ -33,8 +33,8 @@ install.packages("cmdstanr", repos = c(
 cmdstanr::install_cmdstan()
 
 # Step 3: Install birt from GitHub
-install.packages("pak")
-pak::pak("Ndukaboika/birt")
+# install.packages("remotes")
+remotes::install_github("Ndukaboika/birt")
 ```
 
 Verify the installation:

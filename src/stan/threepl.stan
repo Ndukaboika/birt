@@ -43,10 +43,8 @@ model {
   beta ~ normal(prior_beta_mean, prior_beta_sd);
   a ~ lognormal(prior_a_meanlog, prior_a_sdlog);
 
-  // Beta distribution is not vectorized in Stan, need a loop
-  for (k in 1:K) {
-    c[k] ~ beta(prior_c_alpha[k], prior_c_beta[k]);
-  }
+  // Beta distribution is vectorized
+  c ~ beta(prior_c_alpha, prior_c_beta);
 
   {
     vector[N] prob;
